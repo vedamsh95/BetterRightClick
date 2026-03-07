@@ -38,6 +38,7 @@ final class MenuWindowManager: ObservableObject {
 
     private var cancellables: Set<AnyCancellable> = []
     private var hasPromptedForAccessibility = false
+    private var hasStarted = false
     private var lastFrontmostApp: NSRunningApplication?
     private var lastRightClickLocation: NSPoint?
     private var lastPanelShowTime: TimeInterval = 0
@@ -75,6 +76,12 @@ final class MenuWindowManager: ObservableObject {
     }
 
     func start() {
+        guard !hasStarted else { return }
+        hasStarted = true
+
+        // Defensive cleanup in case startup is called after partial initialization.
+        removeEventMonitors()
+
         ensurePanel()
         clipboardService.startMonitoring()
         clipboardService.captureCurrentSnapshot()
@@ -108,7 +115,11 @@ final class MenuWindowManager: ObservableObject {
     }
 
     func shutdown() {
+        guard hasStarted else { return }
+        hasStarted = false
+
         removeEventMonitors()
+        panel?.orderOut(nil)
         clipboardService.stopMonitoring()
     }
 
