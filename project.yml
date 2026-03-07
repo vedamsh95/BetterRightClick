@@ -1,0 +1,34 @@
+name: BetterRightClick
+options:
+  bundleIdPrefix: com.example
+settings:
+  base:
+    SWIFT_VERSION: 5.0
+    MACOSX_DEPLOYMENT_TARGET: 13.0
+targets:
+  BetterRightClick:
+    type: application
+    platform: macOS
+    deploymentTarget: "13.0"
+    sources:
+      - Sources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.BetterRightClick
+        PRODUCT_NAME: BetterRightClick
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Better Right Click
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
+        INFOPLIST_KEY_NSAccessibilityUsageDescription: We need accessibility to detect right-click context and trigger actions.
+        INFOPLIST_KEY_NSAppleEventsUsageDescription: Better Right Click uses Apple Events for advanced automation actions.
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_ENTITLEMENTS: BetterRightClick.entitlements
+        ENABLE_HARDENED_RUNTIME: YES
+        ENABLE_APP_SANDBOX: NO
+schemes:
+  BetterRightClick:
+    build:
+      targets:
+        BetterRightClick: all
+    run:
+      config: Debug

@@ -1,0 +1,465 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		07E604B8A415D0C4E76C9D2C /* MenuWindowManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6BAAE527CE4A00D533CC697 /* MenuWindowManager.swift */; };
+		14B16CA798043929A95E93AD /* EntitlementService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF9B2E2B664EADDBD4DDFEC3 /* EntitlementService.swift */; };
+		1C02DA35360539608F251755 /* SwitcherTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A95A780B23FE1F92717808C /* SwitcherTab.swift */; };
+		223D4DC3A109E2169CF4D57E /* ClipboardService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7596473D97152444973586D9 /* ClipboardService.swift */; };
+		3D079FF73B5FF373D9950463 /* NewFileType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FEBCBDF32329F1286274F39 /* NewFileType.swift */; };
+		40A7D4C5EAF5FD6DE2F7C8E5 /* BetterRightClickApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7033C1D429A47C512236236 /* BetterRightClickApp.swift */; };
+		5C01875262FDAAAF9110C025 /* PinnedApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40AF7AA47510C033B18A3926 /* PinnedApp.swift */; };
+		64237F9FEE36823250BA6E61 /* AppSwitcherService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF656C603279AF46E8F838F9 /* AppSwitcherService.swift */; };
+		772263DF196801DB4B2F412E /* SuperMenuRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E3E6C2631D0341424011AB2 /* SuperMenuRootView.swift */; };
+		78E5E144173CA9E8A4CAFFC6 /* AppIconView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 668CFA826DDC2B797A5B4BFE /* AppIconView.swift */; };
+		8799AD1BC8A1103EC7EACBD8 /* AccessibilityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85C1744CABCBBF595D6E5B75 /* AccessibilityService.swift */; };
+		8BF412C79BF29ADA779CFAC2 /* FileOperationsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F04281E472E2D50637D43183 /* FileOperationsService.swift */; };
+		8F8C735ADF086FBFA4C2960E /* ActionsTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 965CF468D822DA8C302ECBA7 /* ActionsTab.swift */; };
+		D06F134C15E328CE79761E61 /* ContextService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDA15143CC0B1C75675FC241 /* ContextService.swift */; };
+		D36BA34A6F6F93A0397EE589 /* ContextState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B603F4CC94D8BEC4AEE8884 /* ContextState.swift */; };
+		F4C892E75C3D7C6EA89EEAC8 /* ClipboardItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E96D11FD382F413FD579CF4 /* ClipboardItem.swift */; };
+		FE7A32CCE6DD31A36586D478 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AA8E259530C8D1E1089EDB8 /* AppDelegate.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		1A95A780B23FE1F92717808C /* SwitcherTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwitcherTab.swift; sourceTree = "<group>"; };
+		1AA8E259530C8D1E1089EDB8 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		2802D1B14DDD6B94712ACF92 /* BetterRightClick.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BetterRightClick.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2E3E6C2631D0341424011AB2 /* SuperMenuRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuperMenuRootView.swift; sourceTree = "<group>"; };
+		40AF7AA47510C033B18A3926 /* PinnedApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinnedApp.swift; sourceTree = "<group>"; };
+		4B603F4CC94D8BEC4AEE8884 /* ContextState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextState.swift; sourceTree = "<group>"; };
+		5E96D11FD382F413FD579CF4 /* ClipboardItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardItem.swift; sourceTree = "<group>"; };
+		668CFA826DDC2B797A5B4BFE /* AppIconView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIconView.swift; sourceTree = "<group>"; };
+		7596473D97152444973586D9 /* ClipboardService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardService.swift; sourceTree = "<group>"; };
+		85C1744CABCBBF595D6E5B75 /* AccessibilityService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityService.swift; sourceTree = "<group>"; };
+		8FEBCBDF32329F1286274F39 /* NewFileType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewFileType.swift; sourceTree = "<group>"; };
+		965CF468D822DA8C302ECBA7 /* ActionsTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionsTab.swift; sourceTree = "<group>"; };
+		BCC62E372F5BA5E9000B3185 /* BetterRightClick-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "BetterRightClick-Info.plist"; sourceTree = "<group>"; };
+		BDA15143CC0B1C75675FC241 /* ContextService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextService.swift; sourceTree = "<group>"; };
+		CF9B2E2B664EADDBD4DDFEC3 /* EntitlementService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntitlementService.swift; sourceTree = "<group>"; };
+		D6BAAE527CE4A00D533CC697 /* MenuWindowManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuWindowManager.swift; sourceTree = "<group>"; };
+		DF656C603279AF46E8F838F9 /* AppSwitcherService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSwitcherService.swift; sourceTree = "<group>"; };
+		E7033C1D429A47C512236236 /* BetterRightClickApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BetterRightClickApp.swift; sourceTree = "<group>"; };
+		F04281E472E2D50637D43183 /* FileOperationsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileOperationsService.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		2E8A84CB639D2F1F6A91154F /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				D6BAAE527CE4A00D533CC697 /* MenuWindowManager.swift */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		482661BC2B5968FC58C82731 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				1AA8E259530C8D1E1089EDB8 /* AppDelegate.swift */,
+				E7033C1D429A47C512236236 /* BetterRightClickApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		5F92E0A5A9C7AD208F0D7045 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				85C1744CABCBBF595D6E5B75 /* AccessibilityService.swift */,
+				DF656C603279AF46E8F838F9 /* AppSwitcherService.swift */,
+				7596473D97152444973586D9 /* ClipboardService.swift */,
+				BDA15143CC0B1C75675FC241 /* ContextService.swift */,
+				CF9B2E2B664EADDBD4DDFEC3 /* EntitlementService.swift */,
+				F04281E472E2D50637D43183 /* FileOperationsService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		7FDE0F9900A542910510ED61 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				482661BC2B5968FC58C82731 /* App */,
+				2E8A84CB639D2F1F6A91154F /* Core */,
+				C8E3222A9A296504E59F7576 /* Models */,
+				5F92E0A5A9C7AD208F0D7045 /* Services */,
+				CA6DC79DCB01F34485DF88A1 /* UI */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		84CB6381BF741627F6264BAB /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				2802D1B14DDD6B94712ACF92 /* BetterRightClick.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		BFF6B6DFBC5507CD448DA67F = {
+			isa = PBXGroup;
+			children = (
+				BCC62E372F5BA5E9000B3185 /* BetterRightClick-Info.plist */,
+				7FDE0F9900A542910510ED61 /* Sources */,
+				84CB6381BF741627F6264BAB /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		C8E3222A9A296504E59F7576 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				5E96D11FD382F413FD579CF4 /* ClipboardItem.swift */,
+				4B603F4CC94D8BEC4AEE8884 /* ContextState.swift */,
+				8FEBCBDF32329F1286274F39 /* NewFileType.swift */,
+				40AF7AA47510C033B18A3926 /* PinnedApp.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		CA6DC79DCB01F34485DF88A1 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				965CF468D822DA8C302ECBA7 /* ActionsTab.swift */,
+				668CFA826DDC2B797A5B4BFE /* AppIconView.swift */,
+				2E3E6C2631D0341424011AB2 /* SuperMenuRootView.swift */,
+				1A95A780B23FE1F92717808C /* SwitcherTab.swift */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		EF37B68640112F000E261FD0 /* BetterRightClick */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 51CB33909A0BF625599B2C52 /* Build configuration list for PBXNativeTarget "BetterRightClick" */;
+			buildPhases = (
+				F3AAF8669146E29D589DD970 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = BetterRightClick;
+			packageProductDependencies = (
+			);
+			productName = BetterRightClick;
+			productReference = 2802D1B14DDD6B94712ACF92 /* BetterRightClick.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		00566D499E24059BC48FED9D /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 2630;
+				TargetAttributes = {
+					EF37B68640112F000E261FD0 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 41304282569CE71DAC9A8AEB /* Build configuration list for PBXProject "BetterRightClick" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = BFF6B6DFBC5507CD448DA67F;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 84CB6381BF741627F6264BAB /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				EF37B68640112F000E261FD0 /* BetterRightClick */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		F3AAF8669146E29D589DD970 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8799AD1BC8A1103EC7EACBD8 /* AccessibilityService.swift in Sources */,
+				8F8C735ADF086FBFA4C2960E /* ActionsTab.swift in Sources */,
+				FE7A32CCE6DD31A36586D478 /* AppDelegate.swift in Sources */,
+				78E5E144173CA9E8A4CAFFC6 /* AppIconView.swift in Sources */,
+				64237F9FEE36823250BA6E61 /* AppSwitcherService.swift in Sources */,
+				40A7D4C5EAF5FD6DE2F7C8E5 /* BetterRightClickApp.swift in Sources */,
+				F4C892E75C3D7C6EA89EEAC8 /* ClipboardItem.swift in Sources */,
+				223D4DC3A109E2169CF4D57E /* ClipboardService.swift in Sources */,
+				D06F134C15E328CE79761E61 /* ContextService.swift in Sources */,
+				D36BA34A6F6F93A0397EE589 /* ContextState.swift in Sources */,
+				14B16CA798043929A95E93AD /* EntitlementService.swift in Sources */,
+				8BF412C79BF29ADA779CFAC2 /* FileOperationsService.swift in Sources */,
+				07E604B8A415D0C4E76C9D2C /* MenuWindowManager.swift in Sources */,
+				3D079FF73B5FF373D9950463 /* NewFileType.swift in Sources */,
+				5C01875262FDAAAF9110C025 /* PinnedApp.swift in Sources */,
+				772263DF196801DB4B2F412E /* SuperMenuRootView.swift in Sources */,
+				1C02DA35360539608F251755 /* SwitcherTab.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		030115D0DB0E9C5FF0C57ABC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				AUTOMATION_APPLE_EVENTS = YES;
+				CODE_SIGN_ENTITLEMENTS = BetterRightClick.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_FILE_ACCESS_DOWNLOADS_FOLDER = readwrite;
+				ENABLE_FILE_ACCESS_MOVIES_FOLDER = readwrite;
+				ENABLE_FILE_ACCESS_MUSIC_FOLDER = readwrite;
+				ENABLE_FILE_ACCESS_PICTURE_FOLDER = readwrite;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = YES;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = YES;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = YES;
+				ENABLE_RESOURCE_ACCESS_CAMERA = YES;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = YES;
+				ENABLE_RESOURCE_ACCESS_LOCATION = YES;
+				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = YES;
+				ENABLE_RESOURCE_ACCESS_PRINTING = YES;
+				ENABLE_RESOURCE_ACCESS_USB = YES;
+				ENABLE_USER_SELECTED_FILES = readwrite;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "BetterRightClick-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Better Right Click";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_NSAccessibilityUsageDescription = "We need accessibility to detect right-click context and trigger actions.";
+				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Better Right Click uses Apple Events for advanced automation actions.";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.BetterRightClick;
+				PRODUCT_NAME = BetterRightClick;
+				RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES = NO;
+				RUNTIME_EXCEPTION_ALLOW_JIT = NO;
+				RUNTIME_EXCEPTION_ALLOW_UNSIGNED_EXECUTABLE_MEMORY = NO;
+				RUNTIME_EXCEPTION_DEBUGGING_TOOL = YES;
+				RUNTIME_EXCEPTION_DISABLE_EXECUTABLE_PAGE_PROTECTION = NO;
+				RUNTIME_EXCEPTION_DISABLE_LIBRARY_VALIDATION = NO;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		8F311D6BA44C3FE27AA36EFD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		B8E847BE1B604D0E4B2B7AA0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				AUTOMATION_APPLE_EVENTS = YES;
+				CODE_SIGN_ENTITLEMENTS = BetterRightClick.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_FILE_ACCESS_DOWNLOADS_FOLDER = readwrite;
+				ENABLE_FILE_ACCESS_MOVIES_FOLDER = readwrite;
+				ENABLE_FILE_ACCESS_MUSIC_FOLDER = readwrite;
+				ENABLE_FILE_ACCESS_PICTURE_FOLDER = readwrite;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = YES;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = YES;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = YES;
+				ENABLE_RESOURCE_ACCESS_CAMERA = YES;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = YES;
+				ENABLE_RESOURCE_ACCESS_LOCATION = YES;
+				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = YES;
+				ENABLE_RESOURCE_ACCESS_PRINTING = YES;
+				ENABLE_RESOURCE_ACCESS_USB = YES;
+				ENABLE_USER_SELECTED_FILES = readwrite;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "BetterRightClick-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Better Right Click";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_NSAccessibilityUsageDescription = "We need accessibility to detect right-click context and trigger actions.";
+				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Better Right Click uses Apple Events for advanced automation actions.";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.BetterRightClick;
+				PRODUCT_NAME = BetterRightClick;
+				RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES = NO;
+				RUNTIME_EXCEPTION_ALLOW_JIT = NO;
+				RUNTIME_EXCEPTION_ALLOW_UNSIGNED_EXECUTABLE_MEMORY = NO;
+				RUNTIME_EXCEPTION_DEBUGGING_TOOL = YES;
+				RUNTIME_EXCEPTION_DISABLE_EXECUTABLE_PAGE_PROTECTION = NO;
+				RUNTIME_EXCEPTION_DISABLE_LIBRARY_VALIDATION = NO;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		DD6A7D20C5EAB75D06AAC36E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		41304282569CE71DAC9A8AEB /* Build configuration list for PBXProject "BetterRightClick" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DD6A7D20C5EAB75D06AAC36E /* Debug */,
+				8F311D6BA44C3FE27AA36EFD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		51CB33909A0BF625599B2C52 /* Build configuration list for PBXNativeTarget "BetterRightClick" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				030115D0DB0E9C5FF0C57ABC /* Debug */,
+				B8E847BE1B604D0E4B2B7AA0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 00566D499E24059BC48FED9D /* Project object */;
+}
