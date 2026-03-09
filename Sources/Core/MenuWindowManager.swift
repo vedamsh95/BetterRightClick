@@ -5,6 +5,11 @@ import Vision
 
 @MainActor
 final class MenuWindowManager: ObservableObject {
+    // Undo last snap
+    func undoSnap() {
+        let ok = windowSnapService.undoLastSnap()
+        statusMessage = ok ? "Restored previous window frame." : "Nothing to undo."
+    }
     @Published private(set) var clipboardItems: [ClipboardItem] = []
     @Published private(set) var runningApps: [NSRunningApplication] = []
     @Published private(set) var contextState: ContextState = ContextState()
@@ -22,6 +27,9 @@ final class MenuWindowManager: ObservableObject {
     @Published private(set) var diagnosticsOCRState: String = "idle"
     @Published private(set) var diagnosticsOCRDestination: String = "none"
     @Published private(set) var diagnosticsAppBundlePath: String = ""
+    @Published private(set) var diagnosticsSnapState: String = "idle"
+    @Published private(set) var permissionSnapshot: PermissionStateMachine.Snapshot = .empty
+    @Published private(set) var snapDisplays: [WindowSnapService.DisplayTarget] = []
     @Published private(set) var lookupResult: String?
 
     private var panel: NSPanel?
@@ -34,6 +42,8 @@ final class MenuWindowManager: ObservableObject {
     private let contextService: ContextService
     private let fileOperationsService: FileOperationsService
     private let accessibilityService = AccessibilityService()
+    private let permissionStateMachine = PermissionStateMachine()
+    private let windowSnapService = WindowSnapService()
     private let entitlementService = EntitlementService()
 
     private var cancellables: Set<AnyCancellable> = []
@@ -87,7 +97,8 @@ final class MenuWindowManager: ObservableObject {
         clipboardService.captureCurrentSnapshot()
         appSwitcherService.refreshRunningApps()
         refreshContext()
-        refreshDiagnostics()
+        refreshDiagnostics(probePermissions: false)
+        refreshSnapDisplays()
 
         if !accessibilityService.isTrusted(promptIfNeeded: true) {
             accessibilityService.openSettings()
@@ -153,9 +164,33 @@ final class MenuWindowManager: ObservableObject {
         diagnosticsSelectionDetails = contextService.lastSelectionDiagnostics
     }
 
-    func refreshDiagnostics() {
-        diagnosticsAXTrusted = accessibilityService.isTrusted(promptIfNeeded: false)
-        diagnosticsAppleEventsEntitled = entitlementService.hasEntitlement("com.apple.security.automation.apple-events")
+    func refreshDiagnostics(probePermissions: Bool = false) {
+        permissionSnapshot = permissionStateMachine.refresh(
+            accessibilityService: accessibilityService,
+            entitlementService: entitlementService,
+            previous: permissionSnapshot,
+            probeAppleEvents: false // Sync part ignores probe to keep UI responsive
+        )
+
+        updateDiagnosticsProperties()
+
+        if probePermissions {
+            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                guard let self = self else { return }
+                let appleEventsResult = self.permissionStateMachine.probeAppleEventsAutomation(promptIfNeeded: false)
+                DispatchQueue.main.async {
+                    self.permissionSnapshot.appleEventsGranted = appleEventsResult.granted
+                    self.permissionSnapshot.appleEventsLastError = appleEventsResult.errorSummary
+                    self.updateDiagnosticsProperties()
+                }
+            }
+        }
+    }
+
+    private func updateDiagnosticsProperties() {
+        diagnosticsAXTrusted = permissionSnapshot.accessibilityGranted
+        diagnosticsAutomationOK = permissionSnapshot.appleEventsGranted
+        diagnosticsAppleEventsEntitled = permissionSnapshot.appleEventsEntitled
         diagnosticsTargetBundleID = contextState.frontmostBundleID
             ?? lastFrontmostApp?.bundleIdentifier
             ?? NSWorkspace.shared.frontmostApplication?.bundleIdentifier
@@ -165,14 +200,32 @@ final class MenuWindowManager: ObservableObject {
     }
 
     func requestAccessibilityAccess() {
-        diagnosticsAXTrusted = accessibilityService.isTrusted(promptIfNeeded: true)
-        accessibilityService.openSettings()
+        permissionStateMachine.requestAccessibility(accessibilityService: accessibilityService)
+        refreshDiagnostics(probePermissions: true)
         hasPromptedForAccessibility = true
+    }
+
+    func requestAppleEventsAccess() {
+        permissionStateMachine.requestAppleEvents()
+        refreshDiagnostics(probePermissions: true)
+    }
+
+    func requestScreenRecordingAccess() {
+        permissionStateMachine.requestScreenRecording()
+        refreshDiagnostics(probePermissions: true)
+    }
+
+    func openScreenRecordingSettings() {
+        permissionStateMachine.openScreenRecordingSettings()
+    }
+
+    func openAutomationSettings() {
+        permissionStateMachine.openAutomationSettings()
     }
 
     func refreshPermissionsAndContext() {
         refreshContext(useFinderScript: false, allowSelectionProbe: false)
-        refreshDiagnostics()
+        refreshDiagnostics(probePermissions: true)
     }
 
     func revealThisAppInFinder() {
@@ -189,13 +242,16 @@ final class MenuWindowManager: ObservableObject {
         let lines = [
             "AX Trusted: \(diagnosticsAXTrusted ? "Yes" : "No")",
             "Automation (System Events): \(diagnosticsAutomationOK ? "Yes" : "No")",
+            "Screen Recording: \(permissionSnapshot.screenRecordingGranted ? "Yes" : "No")",
             "Target Bundle: \(diagnosticsTargetBundleID)",
             "Selected Text Detected: \(diagnosticsSelectedTextDetected ? "Yes" : "No")",
             "Selection Source: \(diagnosticsSelectionSource)",
             "Selection Details: \(diagnosticsSelectionDetails)",
             "OCR State: \(diagnosticsOCRState)",
             "OCR Destination: \(diagnosticsOCRDestination)",
+            "Snap State: \(diagnosticsSnapState)",
             "Apple Events Entitlement: \(diagnosticsAppleEventsEntitled ? "Yes" : "No")",
+            "Apple Events Last Error: \(permissionSnapshot.appleEventsLastError)",
             "Context Folder: \(diagnosticsContextFolder)",
             "Last Paste Path: \(diagnosticsLastPastePath)",
             "App Path: \(diagnosticsAppBundlePath)"
@@ -288,6 +344,38 @@ final class MenuWindowManager: ObservableObject {
     func focusApp(_ app: NSRunningApplication) {
         _ = app.activate(options: [.activateAllWindows])
         hidePanel()
+    }
+
+    func refreshSnapDisplays() {
+        snapDisplays = windowSnapService.availableDisplays()
+    }
+
+    func snapWindowToGrid(columns: Int, rows: Int, column: Int, rowFromTop: Int, preferredDisplayID: CGDirectDisplayID?) {
+        refreshDiagnostics(probePermissions: false)
+        let probePoint = lastRightClickLocation ?? NSEvent.mouseLocation
+        let preferredPID = lastFrontmostApp?.processIdentifier
+        do {
+            let display = try windowSnapService.snapWindowUnderCursor(
+                columns: columns,
+                rows: rows,
+                column: column,
+                rowFromTop: rowFromTop,
+                preferredDisplayID: preferredDisplayID,
+                probeLocation: probePoint,
+                preferredAppPID: preferredPID
+            )
+            statusMessage = "Snapped window on \(display.name) (\(columns)x\(rows))."
+            diagnosticsSnapState = "success: display=\(display.name), grid=\(columns)x\(rows), cell=(\(rowFromTop),\(column)), probe=(\(Int(probePoint.x)),\(Int(probePoint.y)))"
+            refreshSnapDisplays()
+        } catch {
+            statusMessage = error.localizedDescription
+            let ax = diagnosticsAXTrusted ? "granted" : "not granted"
+            if let snapError = error as? WindowSnapService.SnapError {
+                diagnosticsSnapState = "failed: \(snapError.localizedDescription) | AX=\(ax) | displays=\(snapDisplays.count) | probe=(\(Int(probePoint.x)),\(Int(probePoint.y)))"
+            } else {
+                diagnosticsSnapState = "failed: \(error.localizedDescription) | AX=\(ax)"
+            }
+        }
     }
 
     func copyClipboardItemToPasteboard(_ item: ClipboardItem) {
@@ -786,7 +874,8 @@ final class MenuWindowManager: ObservableObject {
         appSwitcherService.refreshRunningApps()
         // Keep panel-open capture AppleScript-free for stability in Finder/Desktop.
         refreshContext(useFinderScript: false, allowSelectionProbe: false)
-        refreshDiagnostics()
+        refreshDiagnostics(probePermissions: false)
+        refreshSnapDisplays()
 
         guard let panel else { return }
         if let screen = NSScreen.screens.first(where: { NSMouseInRect(mouse, $0.frame, false) }) {

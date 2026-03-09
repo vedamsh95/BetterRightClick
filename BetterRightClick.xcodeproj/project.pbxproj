@@ -20,8 +20,12 @@
 		8799AD1BC8A1103EC7EACBD8 /* AccessibilityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85C1744CABCBBF595D6E5B75 /* AccessibilityService.swift */; };
 		8BF412C79BF29ADA779CFAC2 /* FileOperationsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F04281E472E2D50637D43183 /* FileOperationsService.swift */; };
 		8F8C735ADF086FBFA4C2960E /* ActionsTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 965CF468D822DA8C302ECBA7 /* ActionsTab.swift */; };
+		9D9B04ECFB5B8FA4D9893B99 /* PermissionStateMachine.swift in Sources */ = {isa = PBXBuildFile; fileRef = E86A369529F2A37A01A8E355 /* PermissionStateMachine.swift */; };
+		A43A40C5ABD9336D2F49B12D /* WindowSnapService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2643170ECB6083E6A3CD662 /* WindowSnapService.swift */; };
 		D06F134C15E328CE79761E61 /* ContextService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDA15143CC0B1C75675FC241 /* ContextService.swift */; };
 		D36BA34A6F6F93A0397EE589 /* ContextState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B603F4CC94D8BEC4AEE8884 /* ContextState.swift */; };
+		E2CD11C407439455848226BA /* SnapTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CC56BDA7F64852A1A23FD8A /* SnapTab.swift */; };
+		EBC0CF45E0E457D16D4A72CA /* SettingsTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = C11D9E32881BD3618E4DCFB4 /* SettingsTab.swift */; };
 		F4C892E75C3D7C6EA89EEAC8 /* ClipboardItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E96D11FD382F413FD579CF4 /* ClipboardItem.swift */; };
 		FE7A32CCE6DD31A36586D478 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AA8E259530C8D1E1089EDB8 /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
@@ -35,16 +39,20 @@
 		4B603F4CC94D8BEC4AEE8884 /* ContextState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextState.swift; sourceTree = "<group>"; };
 		5E96D11FD382F413FD579CF4 /* ClipboardItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardItem.swift; sourceTree = "<group>"; };
 		668CFA826DDC2B797A5B4BFE /* AppIconView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIconView.swift; sourceTree = "<group>"; };
+		6CC56BDA7F64852A1A23FD8A /* SnapTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapTab.swift; sourceTree = "<group>"; };
 		7596473D97152444973586D9 /* ClipboardService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardService.swift; sourceTree = "<group>"; };
 		85C1744CABCBBF595D6E5B75 /* AccessibilityService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityService.swift; sourceTree = "<group>"; };
 		8FEBCBDF32329F1286274F39 /* NewFileType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewFileType.swift; sourceTree = "<group>"; };
 		965CF468D822DA8C302ECBA7 /* ActionsTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionsTab.swift; sourceTree = "<group>"; };
+		B2643170ECB6083E6A3CD662 /* WindowSnapService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowSnapService.swift; sourceTree = "<group>"; };
 		BCC62E372F5BA5E9000B3185 /* BetterRightClick-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "BetterRightClick-Info.plist"; sourceTree = "<group>"; };
 		BDA15143CC0B1C75675FC241 /* ContextService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextService.swift; sourceTree = "<group>"; };
+		C11D9E32881BD3618E4DCFB4 /* SettingsTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsTab.swift; sourceTree = "<group>"; };
 		CF9B2E2B664EADDBD4DDFEC3 /* EntitlementService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntitlementService.swift; sourceTree = "<group>"; };
 		D6BAAE527CE4A00D533CC697 /* MenuWindowManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuWindowManager.swift; sourceTree = "<group>"; };
 		DF656C603279AF46E8F838F9 /* AppSwitcherService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSwitcherService.swift; sourceTree = "<group>"; };
 		E7033C1D429A47C512236236 /* BetterRightClickApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BetterRightClickApp.swift; sourceTree = "<group>"; };
+		E86A369529F2A37A01A8E355 /* PermissionStateMachine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionStateMachine.swift; sourceTree = "<group>"; };
 		F04281E472E2D50637D43183 /* FileOperationsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileOperationsService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -75,6 +83,8 @@
 				BDA15143CC0B1C75675FC241 /* ContextService.swift */,
 				CF9B2E2B664EADDBD4DDFEC3 /* EntitlementService.swift */,
 				F04281E472E2D50637D43183 /* FileOperationsService.swift */,
+				E86A369529F2A37A01A8E355 /* PermissionStateMachine.swift */,
+				B2643170ECB6083E6A3CD662 /* WindowSnapService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -124,6 +134,8 @@
 			children = (
 				965CF468D822DA8C302ECBA7 /* ActionsTab.swift */,
 				668CFA826DDC2B797A5B4BFE /* AppIconView.swift */,
+				6CC56BDA7F64852A1A23FD8A /* SnapTab.swift */,
+				C11D9E32881BD3618E4DCFB4 /* SettingsTab.swift */,
 				2E3E6C2631D0341424011AB2 /* SuperMenuRootView.swift */,
 				1A95A780B23FE1F92717808C /* SwitcherTab.swift */,
 			);
@@ -202,9 +214,13 @@
 				8BF412C79BF29ADA779CFAC2 /* FileOperationsService.swift in Sources */,
 				07E604B8A415D0C4E76C9D2C /* MenuWindowManager.swift in Sources */,
 				3D079FF73B5FF373D9950463 /* NewFileType.swift in Sources */,
+				9D9B04ECFB5B8FA4D9893B99 /* PermissionStateMachine.swift in Sources */,
 				5C01875262FDAAAF9110C025 /* PinnedApp.swift in Sources */,
+				E2CD11C407439455848226BA /* SnapTab.swift in Sources */,
+				EBC0CF45E0E457D16D4A72CA /* SettingsTab.swift in Sources */,
 				772263DF196801DB4B2F412E /* SuperMenuRootView.swift in Sources */,
 				1C02DA35360539608F251755 /* SwitcherTab.swift in Sources */,
+				A43A40C5ABD9336D2F49B12D /* WindowSnapService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -220,24 +236,19 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEAD_CODE_STRIPPING = YES;
-				ENABLE_APP_SANDBOX = YES;
-				ENABLE_FILE_ACCESS_DOWNLOADS_FOLDER = readwrite;
-				ENABLE_FILE_ACCESS_MOVIES_FOLDER = readwrite;
-				ENABLE_FILE_ACCESS_MUSIC_FOLDER = readwrite;
-				ENABLE_FILE_ACCESS_PICTURE_FOLDER = readwrite;
+				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
-				ENABLE_INCOMING_NETWORK_CONNECTIONS = YES;
-				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
-				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = YES;
-				ENABLE_RESOURCE_ACCESS_BLUETOOTH = YES;
-				ENABLE_RESOURCE_ACCESS_CALENDARS = YES;
-				ENABLE_RESOURCE_ACCESS_CAMERA = YES;
-				ENABLE_RESOURCE_ACCESS_CONTACTS = YES;
-				ENABLE_RESOURCE_ACCESS_LOCATION = YES;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = NO;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
+				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
 				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = YES;
-				ENABLE_RESOURCE_ACCESS_PRINTING = YES;
-				ENABLE_RESOURCE_ACCESS_USB = YES;
-				ENABLE_USER_SELECTED_FILES = readwrite;
+				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
+				ENABLE_RESOURCE_ACCESS_USB = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "BetterRightClick-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Better Right Click";
@@ -330,7 +341,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEAD_CODE_STRIPPING = YES;
-				ENABLE_APP_SANDBOX = YES;
+				ENABLE_APP_SANDBOX = NO;
 				ENABLE_FILE_ACCESS_DOWNLOADS_FOLDER = readwrite;
 				ENABLE_FILE_ACCESS_MOVIES_FOLDER = readwrite;
 				ENABLE_FILE_ACCESS_MUSIC_FOLDER = readwrite;

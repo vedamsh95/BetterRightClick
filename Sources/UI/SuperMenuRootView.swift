@@ -4,6 +4,8 @@ struct SuperMenuRootView: View {
     private enum MenuTab: String, CaseIterable, Identifiable {
         case actions = "Actions"
         case switcher = "Switcher"
+        case snap = "Snap"
+        case settings = "Settings"
 
         var id: String { rawValue }
     }
@@ -26,6 +28,10 @@ struct SuperMenuRootView: View {
                     ActionsTab(windowManager: windowManager)
                 case .switcher:
                     SwitcherTab(windowManager: windowManager)
+                case .snap:
+                    SnapTab(windowManager: windowManager)
+                case .settings:
+                    SettingsTab(windowManager: windowManager)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)

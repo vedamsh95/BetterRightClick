@@ -105,13 +105,9 @@ struct ActionsTab: View {
                         .foregroundStyle(.secondary)
                 }
 
-                diagnosticsView
             }
             .frame(maxWidth: .infinity, alignment: .topLeading)
             .padding(.bottom, 2)
-        }
-        .onAppear {
-            windowManager.refreshDiagnostics()
         }
     }
 
@@ -218,85 +214,6 @@ struct ActionsTab: View {
                     .foregroundStyle(.secondary)
             }
         }
-    }
-
-    private var diagnosticsView: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text("Diagnostics")
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                Spacer()
-                Button("Copy Diagnostics") {
-                    windowManager.copyDiagnosticsSnapshot()
-                }
-                .buttonStyle(.bordered)
-            }
-
-            Text("AX Trusted: \(windowManager.diagnosticsAXTrusted ? "Yes" : "No")")
-                .font(.caption2)
-            if !windowManager.diagnosticsAXTrusted {
-                HStack(spacing: 8) {
-                    Button("Grant Accessibility") {
-                        windowManager.requestAccessibilityAccess()
-                    }
-                    .buttonStyle(.borderedProminent)
-
-                    Button("Recheck") {
-                        windowManager.refreshPermissionsAndContext()
-                    }
-                    .buttonStyle(.bordered)
-
-                    Button("Reveal App") {
-                        windowManager.revealThisAppInFinder()
-                    }
-                    .buttonStyle(.bordered)
-
-                    Button("Copy App Path") {
-                        windowManager.copyAppBundlePath()
-                    }
-                    .buttonStyle(.bordered)
-                }
-                Text("App Path: \(windowManager.diagnosticsAppBundlePath)")
-                    .font(.caption2)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                Text("Note: 'App Path' is this tool's location, not the Finder context folder.")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
-            Text("Automation (System Events): \(windowManager.diagnosticsAutomationOK ? "Yes" : "No")")
-                .font(.caption2)
-            Text("Target Bundle: \(windowManager.diagnosticsTargetBundleID)")
-                .font(.caption2)
-                .lineLimit(1)
-                .truncationMode(.middle)
-            Text("Selected Text Detected: \(windowManager.diagnosticsSelectedTextDetected ? "Yes" : "No")")
-                .font(.caption2)
-            Text("Selection Source: \(windowManager.diagnosticsSelectionSource)")
-                .font(.caption2)
-            Text("Selection Details: \(windowManager.diagnosticsSelectionDetails)")
-                .font(.caption2)
-                .lineLimit(2)
-                .truncationMode(.middle)
-            Text("OCR State: \(windowManager.diagnosticsOCRState)")
-                .font(.caption2)
-                .lineLimit(2)
-                .truncationMode(.middle)
-            Text("OCR Destination: \(windowManager.diagnosticsOCRDestination)")
-                .font(.caption2)
-            Text("Apple Events Entitlement: \(windowManager.diagnosticsAppleEventsEntitled ? "Yes" : "No")")
-                .font(.caption2)
-            Text("Context Folder: \(windowManager.diagnosticsContextFolder)")
-                .font(.caption2)
-                .lineLimit(1)
-                .truncationMode(.middle)
-            Text("Last Paste Path: \(windowManager.diagnosticsLastPastePath)")
-                .font(.caption2)
-        }
-        .padding(8)
-        .background(.quaternary.opacity(0.4))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 
     private func canPaste(_ item: ClipboardItem) -> Bool {
