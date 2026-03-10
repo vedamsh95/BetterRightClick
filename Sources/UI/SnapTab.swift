@@ -12,24 +12,59 @@ struct SnapTab: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            header
-                .padding()
-
-            // Top-level tab picker: Snap | Sidekick
-            Picker("", selection: $topTab) {
-                Text("Snap").tag(0)
-                Text("Sidekick").tag(1)
+            // Compact header: all controls in one row
+            HStack(spacing: 6) {
+                // Snap / Sidekick toggle (compact)
+                Picker("", selection: $topTab) {
+                    Image(systemName: "rectangle.split.2x1").tag(0)
+                    Image(systemName: "person.2.crop.square.stack").tag(1)
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 80)
+                .help(topTab == 0 ? "Snap Mode" : "Sidekick Mode")
+                
+                // Display picker (compact dropdown)
+                Picker("", selection: $selectedDisplay) {
+                    Text("Auto").tag("auto")
+                    ForEach(windowManager.snapDisplays) { display in
+                        Text(display.name).tag("\(display.id)")
+                    }
+                }
+                .pickerStyle(.menu)
+                .frame(maxWidth: 110)
+                .controlSize(.small)
+                
+                Spacer()
+                
+                // Icon-only action buttons with tooltips
+                Button {
+                    windowManager.swapTopTwoWindows()
+                } label: {
+                    Image(systemName: "arrow.left.arrow.right")
+                }
+                .help("Global Swap: swap the two frontmost windows")
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                
+                Button {
+                    windowManager.refreshSnapDisplays()
+                    refreshApps()
+                    if selectedDisplay != "auto",
+                       !windowManager.snapDisplays.contains(where: { "\($0.id)" == selectedDisplay }) {
+                        selectedDisplay = "auto"
+                    }
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                }
+                .help("Refresh displays & running apps")
+                .buttonStyle(.bordered)
+                .controlSize(.small)
             }
-            .pickerStyle(.segmented)
             .padding(.horizontal)
-            .padding(.bottom, 8)
-
-            displayPicker
-                .padding(.horizontal)
-                .padding(.bottom, 8)
+            .padding(.vertical, 8)
 
             ScrollView {
-                VStack(spacing: 16) {
+                VStack(spacing: 12) {
                     if topTab == 0 {
                         windowPickerCarousel
 
@@ -44,7 +79,8 @@ struct SnapTab: View {
                         sidekickTab
                     }
                 }
-                .padding()
+                .padding(.horizontal)
+                .padding(.bottom)
             }
 
             Divider()
@@ -58,12 +94,14 @@ struct SnapTab: View {
                         .truncationMode(.tail)
                 }
                 Spacer()
-                Button("Undo Snap") {
+                Button("Undo") {
                     windowManager.undoSnap()
                 }
                 .buttonStyle(.borderedProminent)
+                .controlSize(.small)
             }
-            .padding()
+            .padding(.horizontal)
+            .padding(.vertical, 6)
         }
         .onAppear {
             windowManager.refreshSnapDisplays()
@@ -83,14 +121,14 @@ struct SnapTab: View {
         }
     }
 
-    // MARK: - Window Picker Carousel (Always Visible in Snap tab)
+    // MARK: - Window Picker Carousel
 
     private var windowPickerCarousel: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text(selectedPIDs.isEmpty ? "Select apps for Smart Mode:" : "\(selectedPIDs.count) App\(selectedPIDs.count == 1 ? "" : "s") Selected")
-                    .font(.subheadline)
-                    .fontWeight(.medium)
+                Text(selectedPIDs.isEmpty ? "Select apps:" : "\(selectedPIDs.count) selected")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 
                 Spacer()
                 
@@ -99,39 +137,39 @@ struct SnapTab: View {
                         selectedPIDs.removeAll()
                         heroIndex = 0
                     }
-                    .font(.caption)
+                    .font(.caption2)
                     .buttonStyle(.bordered)
-                    .controlSize(.small)
+                    .controlSize(.mini)
                 }
             }
                 
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
+                HStack(spacing: 8) {
                     ForEach(runningApps, id: \.processIdentifier) { app in
-                        VStack(spacing: 4) {
+                        VStack(spacing: 2) {
                             if let icon = app.icon {
                                 Image(nsImage: icon)
                                     .resizable()
-                                    .frame(width: 36, height: 36)
+                                    .frame(width: 28, height: 28)
                             } else {
-                                RoundedRectangle(cornerRadius: 8)
+                                RoundedRectangle(cornerRadius: 6)
                                     .fill(Color.secondary.opacity(0.3))
-                                    .frame(width: 36, height: 36)
+                                    .frame(width: 28, height: 28)
                             }
                             
-                            Text(app.localizedName ?? "App")
-                                .font(.system(size: 9))
+                            Text(app.localizedName ?? "")
+                                .font(.system(size: 8))
                                 .lineLimit(1)
-                                .frame(width: 48)
+                                .frame(width: 40)
                         }
-                        .padding(5)
+                        .padding(4)
                         .background(
-                            RoundedRectangle(cornerRadius: 8)
+                            RoundedRectangle(cornerRadius: 6)
                                 .fill(selectedPIDs.contains(app.processIdentifier) ? Color.accentColor.opacity(0.2) : Color.clear)
                         )
                         .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(selectedPIDs.contains(app.processIdentifier) ? Color.accentColor : Color.clear, lineWidth: 2)
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(selectedPIDs.contains(app.processIdentifier) ? Color.accentColor : Color.clear, lineWidth: 1.5)
                         )
                         .onTapGesture {
                             if selectedPIDs.contains(app.processIdentifier) {
@@ -143,9 +181,8 @@ struct SnapTab: View {
                         }
                     }
                 }
-                .padding(.horizontal, 2)
             }
-            .frame(height: 70)
+            .frame(height: 52)
         }
     }
 
@@ -156,15 +193,12 @@ struct SnapTab: View {
         let count = selectedApps.count
         let screenCount = NSScreen.screens.count
         
-        return VStack(alignment: .leading, spacing: 12) {
+        return VStack(alignment: .leading, spacing: 8) {
             Text("Smart Layouts")
-                .font(.headline)
-            
-            Text("\(count) apps selected — choose a layout:")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .font(.subheadline)
+                .fontWeight(.semibold)
 
-            // 1. Even Grid
+            // Even Grid
             smartButton(
                 emoji: "🪟",
                 title: "Even Grid",
@@ -175,15 +209,14 @@ struct SnapTab: View {
                 selectedPIDs.removeAll()
             }
 
-            // 2. Main + Stack with Hero Picker
-            VStack(alignment: .leading, spacing: 8) {
+            // Main + Stack with Hero Picker
+            VStack(alignment: .leading, spacing: 6) {
                 smartButton(
                     emoji: "📚",
                     title: "Main + Stack",
-                    subtitle: "\(selectedApps[safe: heroIndex]?.localizedName ?? "First app") gets 70%, \(count - 1) stacked in 30%",
+                    subtitle: "\(selectedApps[safe: heroIndex]?.localizedName ?? "First") → 70%",
                     tint: Color.orange
                 ) {
-                    // Reorder so the hero is first
                     var reordered = selectedApps
                     if heroIndex > 0 && heroIndex < reordered.count {
                         let hero = reordered.remove(at: heroIndex)
@@ -194,8 +227,8 @@ struct SnapTab: View {
                     heroIndex = 0
                 }
                 
-                // Hero picker inline
-                HStack(spacing: 4) {
+                // Compact hero picker
+                HStack(spacing: 3) {
                     Text("Hero:")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
@@ -204,38 +237,34 @@ struct SnapTab: View {
                         Button {
                             heroIndex = idx
                         } label: {
-                            HStack(spacing: 3) {
-                                if let icon = app.icon {
-                                    Image(nsImage: icon)
-                                        .resizable()
-                                        .frame(width: 16, height: 16)
-                                }
-                                Text(app.localizedName ?? "App")
-                                    .font(.caption2)
+                            if let icon = app.icon {
+                                Image(nsImage: icon)
+                                    .resizable()
+                                    .frame(width: 16, height: 16)
+                                    .padding(2)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 4)
+                                            .fill(heroIndex == idx ? Color.orange.opacity(0.3) : Color.clear)
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 4)
+                                            .stroke(heroIndex == idx ? Color.orange : Color.clear, lineWidth: 1)
+                                    )
                             }
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 3)
-                            .background(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .fill(heroIndex == idx ? Color.orange.opacity(0.3) : Color.secondary.opacity(0.1))
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .stroke(heroIndex == idx ? Color.orange : Color.clear, lineWidth: 1.5)
-                            )
                         }
                         .buttonStyle(.plain)
+                        .help(app.localizedName ?? "App")
                     }
                 }
-                .padding(.leading, 8)
+                .padding(.leading, 6)
             }
 
-            // 3. Distribute to Screens (only if multi-monitor)
+            // Distribute to Screens
             if screenCount >= 2 {
                 smartButton(
                     emoji: "🖥️",
                     title: "Distribute to \(screenCount) Screens",
-                    subtitle: "Spreads apps evenly across all connected monitors",
+                    subtitle: "Even spread across monitors",
                     tint: Color.indigo
                 ) {
                     windowManager.distributeToScreens(apps: selectedApps)
@@ -243,12 +272,12 @@ struct SnapTab: View {
                 }
             }
             
-            // 4. Swap shortcut when exactly 2 selected
+            // Swap (2 selected)
             if count == 2 {
                 smartButton(
                     emoji: "🔄",
-                    title: "Swap Positions",
-                    subtitle: "Teleport these two windows to each other's position",
+                    title: "Swap",
+                    subtitle: "Teleport to each other's position",
                     tint: Color.purple
                 ) {
                     windowManager.swapApps(appA: selectedApps[0], appB: selectedApps[1])
@@ -260,12 +289,12 @@ struct SnapTab: View {
     
     private func smartButton(emoji: String, title: String, subtitle: String, tint: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack {
+            HStack(spacing: 8) {
                 Text(emoji)
-                    .font(.title2)
-                VStack(alignment: .leading, spacing: 2) {
+                    .font(.body)
+                VStack(alignment: .leading, spacing: 1) {
                     Text(title)
-                        .font(.subheadline)
+                        .font(.caption)
                         .fontWeight(.semibold)
                     Text(subtitle)
                         .font(.caption2)
@@ -273,211 +302,183 @@ struct SnapTab: View {
                 }
                 Spacer()
             }
-            .padding(10)
+            .padding(8)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(RoundedRectangle(cornerRadius: 10).fill(tint.opacity(0.1)))
+            .background(RoundedRectangle(cornerRadius: 8).fill(tint.opacity(0.08)))
         }
         .buttonStyle(.plain)
     }
     
     private func evenGridDescription(for count: Int) -> String {
         switch count {
-        case 2: return "Left Half / Right Half"
-        case 3: return "Three equal vertical slices"
+        case 2: return "Left / Right halves"
+        case 3: return "Three equal slices"
         case 4: return "2×2 grid"
-        default: return "\(count) equal columns"
+        default: return "\(count) columns"
         }
     }
 
     // MARK: - State 1: Single Window Grid
 
     private var basicGridsTab: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
             Picker("", selection: $basicSubTab) {
-                Text("Halves").tag(0)
-                Text("Thirds").tag(1)
-                Text("2x2").tag(2)
-                Text("3x3").tag(3)
+                Image(systemName: "rectangle.split.1x2").tag(0)
+                Image(systemName: "rectangle.split.3x1").tag(1)
+                Image(systemName: "rectangle.split.2x2").tag(2)
+                Image(systemName: "rectangle.split.3x3").tag(3)
             }
             .pickerStyle(.segmented)
-            .padding(.bottom, 8)
 
             switch basicSubTab {
-            case 0:
-                halfGrid
+            case 0: halfGrid
             case 1:
-                VStack(spacing: 8) {
-                    HStack(spacing: 8) {
-                        snapButton(title: "Left 1/3", columns: 3, rows: 1, column: 0, rowFromTop: 0)
-                        snapButton(title: "Center 1/3", columns: 3, rows: 1, column: 1, rowFromTop: 0)
-                        snapButton(title: "Right 1/3", columns: 3, rows: 1, column: 2, rowFromTop: 0)
+                VStack(spacing: 6) {
+                    HStack(spacing: 6) {
+                        snapIconButton(icon: "rectangle.leftthird.inset.filled", help: "Left Third", columns: 3, rows: 1, column: 0, rowFromTop: 0)
+                        snapIconButton(icon: "rectangle.centerthird.inset.filled", help: "Center Third", columns: 3, rows: 1, column: 1, rowFromTop: 0)
+                        snapIconButton(icon: "rectangle.rightthird.inset.filled", help: "Right Third", columns: 3, rows: 1, column: 2, rowFromTop: 0)
                     }
-                    HStack(spacing: 8) {
-                        snapButton(title: "Left 2/3", columns: 3, rows: 1, customSpan: (0, 2))
-                        snapButton(title: "Right 2/3", columns: 3, rows: 1, customSpan: (1, 2))
+                    HStack(spacing: 6) {
+                        snapIconButton(icon: "rectangle.leadinghalf.inset.filled", help: "Left Two-Thirds", columns: 3, rows: 1, customSpan: (0, 2))
+                        snapIconButton(icon: "rectangle.trailinghalf.inset.filled", help: "Right Two-Thirds", columns: 3, rows: 1, customSpan: (1, 2))
                     }
                 }
-            case 2:
-                grid2x2
-            case 3:
-                grid3x3
-            default:
-                EmptyView()
+            case 2: grid2x2
+            case 3: grid3x3
+            default: EmptyView()
             }
-            
-            Spacer()
         }
     }
 
-    // MARK: - Sidekick Tab (Separate)
+    // MARK: - Sidekick Tab
 
     private var sidekickTab: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
             Text("Main & Sidekick")
-                .font(.headline)
+                .font(.subheadline)
+                .fontWeight(.semibold)
             
-            Text("The frontmost window becomes the Sidekick (30%). The window behind it expands into the remaining 70%.")
-                .font(.caption)
+            Text("Frontmost window → 30% sidekick. Window behind it → 70% main.")
+                .font(.caption2)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             
             HStack(spacing: 8) {
-                Button("Sidekick Left") {
+                Button {
                     windowManager.snapSidekick(direction: .left, preferredDisplayID: selectedDisplayID)
+                } label: {
+                    Label("Left", systemImage: "sidebar.left")
                 }
                 .buttonStyle(.bordered)
+                .controlSize(.small)
                 .frame(maxWidth: .infinity)
                 
-                Button("Sidekick Right") {
+                Button {
                     windowManager.snapSidekick(direction: .right, preferredDisplayID: selectedDisplayID)
+                } label: {
+                    Label("Right", systemImage: "sidebar.right")
                 }
                 .buttonStyle(.bordered)
+                .controlSize(.small)
                 .frame(maxWidth: .infinity)
             }
-            Spacer()
         }
     }
 
-    // MARK: - Header & Display Picker
-
-    private var header: some View {
-        HStack {
-            Text("Window Snap")
-                .font(.headline)
-            Spacer()
-            Button("Global Swap") {
-                windowManager.swapTopTwoWindows()
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(.purple)
-            
-            Button("Refresh") {
-                windowManager.refreshSnapDisplays()
-                refreshApps()
-                if selectedDisplay != "auto",
-                   !windowManager.snapDisplays.contains(where: { "\($0.id)" == selectedDisplay }) {
-                    selectedDisplay = "auto"
-                }
-            }
-            .buttonStyle(.bordered)
-        }
-    }
-
-    private var displayPicker: some View {
-        Picker("Target Display", selection: $selectedDisplay) {
-            Text("Auto (Display Under Cursor)").tag("auto")
-            ForEach(windowManager.snapDisplays) { display in
-                Text(display.name).tag("\(display.id)")
-            }
-        }
-        .pickerStyle(.menu)
-    }
-
-    // MARK: - Single-Window Grid Helpers
+    // MARK: - Grid Helpers
 
     private var halfGrid: some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 8) {
-                snapButton(title: "Left 1/2", columns: 2, rows: 1, column: 0, rowFromTop: 0)
-                snapButton(title: "Right 1/2", columns: 2, rows: 1, column: 1, rowFromTop: 0)
+        VStack(spacing: 6) {
+            HStack(spacing: 6) {
+                snapIconButton(icon: "rectangle.lefthalf.filled", help: "Left Half", columns: 2, rows: 1, column: 0, rowFromTop: 0)
+                snapIconButton(icon: "rectangle.righthalf.filled", help: "Right Half", columns: 2, rows: 1, column: 1, rowFromTop: 0)
             }
-            HStack(spacing: 8) {
-                snapButton(title: "Top 1/2", columns: 1, rows: 2, column: 0, rowFromTop: 0)
-                snapButton(title: "Bottom 1/2", columns: 1, rows: 2, column: 0, rowFromTop: 1)
+            HStack(spacing: 6) {
+                snapIconButton(icon: "rectangle.tophalf.filled", help: "Top Half", columns: 1, rows: 2, column: 0, rowFromTop: 0)
+                snapIconButton(icon: "rectangle.bottomhalf.filled", help: "Bottom Half", columns: 1, rows: 2, column: 0, rowFromTop: 1)
             }
         }
     }
 
     private var grid2x2: some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 8) {
-                snapButton(title: "Top Left", columns: 2, rows: 2, column: 0, rowFromTop: 0)
-                snapButton(title: "Top Right", columns: 2, rows: 2, column: 1, rowFromTop: 0)
+        VStack(spacing: 6) {
+            HStack(spacing: 6) {
+                snapIconButton(icon: "rectangle.inset.topleft.filled", help: "Top Left", columns: 2, rows: 2, column: 0, rowFromTop: 0)
+                snapIconButton(icon: "rectangle.inset.topright.filled", help: "Top Right", columns: 2, rows: 2, column: 1, rowFromTop: 0)
             }
-            HStack(spacing: 8) {
-                snapButton(title: "Bottom Left", columns: 2, rows: 2, column: 0, rowFromTop: 1)
-                snapButton(title: "Bottom Right", columns: 2, rows: 2, column: 1, rowFromTop: 1)
+            HStack(spacing: 6) {
+                snapIconButton(icon: "rectangle.inset.bottomleft.filled", help: "Bottom Left", columns: 2, rows: 2, column: 0, rowFromTop: 1)
+                snapIconButton(icon: "rectangle.inset.bottomright.filled", help: "Bottom Right", columns: 2, rows: 2, column: 1, rowFromTop: 1)
             }
         }
     }
 
     private var grid3x3: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 6) {
             ForEach(0..<3, id: \.self) { row in
-                HStack(spacing: 8) {
+                HStack(spacing: 6) {
                     ForEach(0..<3, id: \.self) { column in
-                        snapButton(
-                            title: "\(row + 1)-\(column + 1)",
-                            columns: 3,
-                            rows: 3,
-                            column: column,
-                            rowFromTop: row
-                        )
+                        Button {
+                            windowManager.snapWindowToGrid(
+                                columns: 3, rows: 3,
+                                column: column, rowFromTop: row,
+                                preferredDisplayID: selectedDisplayID
+                            )
+                        } label: {
+                            Image(systemName: "square.fill")
+                                .font(.title3)
+                                .frame(maxWidth: .infinity, minHeight: 32)
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .help("Row \(row+1), Column \(column+1)")
                     }
                 }
             }
         }
     }
 
-    // MARK: - Snap Button (Single Window Only)
+    // MARK: - Snap Icon Buttons
 
-    private func snapButton(title: String, columns: Int, rows: Int, column: Int, rowFromTop: Int) -> some View {
-        Button(title) {
+    private func snapIconButton(icon: String, help: String, columns: Int, rows: Int, column: Int, rowFromTop: Int) -> some View {
+        Button {
             windowManager.snapWindowToGrid(
-                columns: columns,
-                rows: rows,
-                column: column,
-                rowFromTop: rowFromTop,
+                columns: columns, rows: rows,
+                column: column, rowFromTop: rowFromTop,
                 preferredDisplayID: selectedDisplayID
             )
+        } label: {
+            Image(systemName: icon)
+                .font(.title3)
+                .frame(maxWidth: .infinity, minHeight: 32)
         }
         .buttonStyle(.bordered)
-        .frame(maxWidth: .infinity)
+        .controlSize(.small)
+        .help(help)
     }
 
-    private func snapButton(title: String, columns: Int, rows: Int, customSpan: (startColumn: Int, columnCount: Int)) -> some View {
-        Button(title) {
+    private func snapIconButton(icon: String, help: String, columns: Int, rows: Int, customSpan: (startColumn: Int, columnCount: Int)) -> some View {
+        Button {
             windowManager.snapWindowCustomSpan(
-                columns: columns,
-                rows: rows,
+                columns: columns, rows: rows,
                 startColumn: customSpan.startColumn,
                 columnCount: customSpan.columnCount,
                 preferredDisplayID: selectedDisplayID
             )
+        } label: {
+            Image(systemName: icon)
+                .font(.title3)
+                .frame(maxWidth: .infinity, minHeight: 32)
         }
         .buttonStyle(.bordered)
-        .frame(maxWidth: .infinity)
+        .controlSize(.small)
+        .help(help)
     }
 
     private var selectedDisplayID: CGDirectDisplayID? {
-        if selectedDisplay == "auto" {
-            return nil
-        }
-
-        guard let parsed = UInt32(selectedDisplay) else {
-            return nil
-        }
-
+        if selectedDisplay == "auto" { return nil }
+        guard let parsed = UInt32(selectedDisplay) else { return nil }
         return CGDirectDisplayID(parsed)
     }
 }

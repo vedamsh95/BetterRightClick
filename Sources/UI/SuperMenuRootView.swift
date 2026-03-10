@@ -15,6 +15,27 @@ struct SuperMenuRootView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
+            // Drag handle + Pin toggle
+            HStack {
+                // Visual drag affordance
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(Color.secondary.opacity(0.4))
+                    .frame(width: 36, height: 4)
+                
+                Spacer()
+                
+                Button {
+                    windowManager.isPinned.toggle()
+                } label: {
+                    Image(systemName: windowManager.isPinned ? "pin.fill" : "pin")
+                        .font(.caption)
+                        .foregroundStyle(windowManager.isPinned ? Color.accentColor : Color.secondary)
+                }
+                .buttonStyle(.plain)
+                .help(windowManager.isPinned ? "Unpin window" : "Pin window (stays on top)")
+            }
+            .padding(.bottom, -4)
+            
             Picker("Menu", selection: $selectedTab) {
                 ForEach(MenuTab.allCases) { tab in
                     Text(tab.rawValue).tag(tab)

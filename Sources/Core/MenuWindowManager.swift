@@ -22,6 +22,7 @@ final class MenuWindowManager: ObservableObject {
     @Published private(set) var diagnosticsLastPastePath: String = "idle"
     @Published private(set) var diagnosticsAppleEventsEntitled: Bool = false
     @Published private(set) var diagnosticsSelectedTextDetected: Bool = false
+    @Published var isPinned: Bool = false
     @Published private(set) var diagnosticsSelectionSource: String = "none"
     @Published private(set) var diagnosticsSelectionDetails: String = "idle"
     @Published private(set) var diagnosticsOCRState: String = "idle"
@@ -1096,6 +1097,7 @@ final class MenuWindowManager: ObservableObject {
         panel.hasShadow = true
         panel.ignoresMouseEvents = false
         panel.hidesOnDeactivate = false
+        panel.isMovableByWindowBackground = true
         panel.contentView = NSView(frame: NSRect(origin: .zero, size: panelSize))
         panel.contentView?.wantsLayer = true
         panel.contentView?.layer?.cornerRadius = 12
@@ -1246,7 +1248,7 @@ final class MenuWindowManager: ObservableObject {
 
         if event.type == .leftMouseDown || event.type == .rightMouseDown {
             let mouse = NSEvent.mouseLocation
-            if !panel.frame.contains(mouse) {
+            if !panel.frame.contains(mouse) && !isPinned {
                 hidePanel()
             }
         }
