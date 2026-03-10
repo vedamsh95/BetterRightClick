@@ -378,6 +378,201 @@ final class MenuWindowManager: ObservableObject {
         }
     }
 
+    func snapWindowCustomSpan(columns: Int, rows: Int, startColumn: Int, columnCount: Int, preferredDisplayID: CGDirectDisplayID?) {
+        refreshDiagnostics(probePermissions: false)
+        let probePoint = lastRightClickLocation ?? NSEvent.mouseLocation
+        let preferredPID = lastFrontmostApp?.processIdentifier
+        do {
+            let display = try windowSnapService.snapWindowCustomSpanUnderCursor(
+                columns: columns,
+                rows: rows,
+                startColumn: startColumn,
+                columnCount: columnCount,
+                preferredDisplayID: preferredDisplayID,
+                probeLocation: probePoint,
+                preferredAppPID: preferredPID
+            )
+            statusMessage = "Snapped custom span on \(display.name)."
+            diagnosticsSnapState = "success: display=\(display.name), customSpan=\(startColumn)->\(startColumn+columnCount)"
+            refreshSnapDisplays()
+        } catch {
+            statusMessage = error.localizedDescription
+            let ax = diagnosticsAXTrusted ? "granted" : "not granted"
+            if let snapError = error as? WindowSnapService.SnapError {
+                diagnosticsSnapState = "failed: \(snapError.localizedDescription) | AX=\(ax)"
+            } else {
+                diagnosticsSnapState = "failed: \(error.localizedDescription) | AX=\(ax)"
+            }
+        }
+    }
+
+    func snapSidekick(direction: WindowSnapService.SidekickDirection, preferredDisplayID: CGDirectDisplayID?) {
+        refreshDiagnostics(probePermissions: false)
+        let probePoint = lastRightClickLocation ?? NSEvent.mouseLocation
+        let preferredPID = lastFrontmostApp?.processIdentifier
+        do {
+            let display = try windowSnapService.snapSidekick(
+                direction: direction,
+                preferredDisplayID: preferredDisplayID,
+                probeLocation: probePoint,
+                preferredAppPID: preferredPID
+            )
+            statusMessage = "Deployed Sidekick on \(display.name)."
+            diagnosticsSnapState = "success: sidekick=\(direction)"
+            refreshSnapDisplays()
+        } catch {
+            statusMessage = error.localizedDescription
+            let ax = diagnosticsAXTrusted ? "granted" : "not granted"
+            if let snapError = error as? WindowSnapService.SnapError {
+                diagnosticsSnapState = "failed: \(snapError.localizedDescription) | AX=\(ax)"
+            } else {
+                diagnosticsSnapState = "failed: \(error.localizedDescription) | AX=\(ax)"
+            }
+        }
+    }
+
+    func snapMultipleApps(_ apps: [NSRunningApplication], preferredDisplayID: CGDirectDisplayID?, layoutMode: WindowSnapService.MultiSnapLayout = .columns) {
+        refreshDiagnostics(probePermissions: false)
+        let probePoint = lastRightClickLocation ?? NSEvent.mouseLocation
+        do {
+            let display = try windowSnapService.snapMultipleApps(
+                apps: apps,
+                preferredDisplayID: preferredDisplayID,
+                probeLocation: probePoint,
+                layoutMode: layoutMode
+            )
+            statusMessage = "Tiled \(apps.count) apps on \(display.name)."
+            diagnosticsSnapState = "success: multi-snap count=\(apps.count)"
+            refreshSnapDisplays()
+        } catch {
+            statusMessage = error.localizedDescription
+            let ax = diagnosticsAXTrusted ? "granted" : "not granted"
+            if let snapError = error as? WindowSnapService.SnapError {
+                diagnosticsSnapState = "failed: \(snapError.localizedDescription) | AX=\(ax)"
+            } else {
+                diagnosticsSnapState = "failed: \(error.localizedDescription) | AX=\(ax)"
+            }
+        }
+    }
+
+    func snapEvenGrid(apps: [NSRunningApplication], preferredDisplayID: CGDirectDisplayID?) {
+        let layout: WindowSnapService.MultiSnapLayout
+        switch apps.count {
+        case 4: layout = .grid2x2
+        default: layout = .columns
+        }
+        snapMultipleApps(apps, preferredDisplayID: preferredDisplayID, layoutMode: layout)
+    }
+
+    func snapMainPlusStack(apps: [NSRunningApplication], preferredDisplayID: CGDirectDisplayID?) {
+        snapMultipleApps(apps, preferredDisplayID: preferredDisplayID, layoutMode: .mainPlusStack)
+    }
+
+    func distributeToScreens(apps: [NSRunningApplication]) {
+        refreshDiagnostics(probePermissions: false)
+        let screens = NSScreen.screens
+        guard !screens.isEmpty else {
+            statusMessage = "No screens detected."
+            return
+        }
+
+        let displays = windowSnapService.availableDisplays()
+        guard !displays.isEmpty else {
+            statusMessage = "No displays available."
+            return
+        }
+
+        // Divide apps evenly across screens
+        let screensToUse = min(displays.count, apps.count)
+        let appsPerScreen = apps.count / screensToUse
+        let remainder = apps.count % screensToUse
+
+        var appIndex = 0
+        for screenIndex in 0..<screensToUse {
+            let count = appsPerScreen + (screenIndex < remainder ? 1 : 0)
+            let subset = Array(apps[appIndex..<appIndex + count])
+            appIndex += count
+
+            let displayID = displays[screenIndex].id
+            snapMultipleApps(subset, preferredDisplayID: displayID)
+        }
+    }
+
+    func swapApps(appA: NSRunningApplication, appB: NSRunningApplication) {
+        refreshDiagnostics(probePermissions: false)
+        do {
+            try windowSnapService.swapApps(pidA: appA.processIdentifier, pidB: appB.processIdentifier)
+            statusMessage = "Swapped \(appA.localizedName ?? "App 1") and \(appB.localizedName ?? "App 2")."
+            diagnosticsSnapState = "success: swap-apps"
+        } catch {
+            statusMessage = error.localizedDescription
+            let ax = diagnosticsAXTrusted ? "granted" : "not granted"
+            if let snapError = error as? WindowSnapService.SnapError {
+                diagnosticsSnapState = "failed: \(snapError.localizedDescription) | AX=\(ax)"
+            } else {
+                diagnosticsSnapState = "failed: \(error.localizedDescription) | AX=\(ax)"
+            }
+        }
+    }
+
+    func swapTopTwoWindows() {
+        refreshDiagnostics(probePermissions: false)
+        // Identify the two frontmost regular apps by Z-order
+        let regularApps = NSWorkspace.shared.runningApplications.filter {
+            $0.activationPolicy == .regular
+            && $0.processIdentifier != ProcessInfo.processInfo.processIdentifier
+        }
+        guard regularApps.count >= 2 else {
+            statusMessage = "Need at least 2 windows to swap."
+            return
+        }
+        do {
+            try windowSnapService.swapApps(pidA: regularApps[0].processIdentifier, pidB: regularApps[1].processIdentifier)
+            statusMessage = "Swapped the two frontmost windows."
+            diagnosticsSnapState = "success: global-swap"
+        } catch {
+            statusMessage = error.localizedDescription
+            diagnosticsSnapState = "failed: \(error.localizedDescription)"
+        }
+    }
+
+    enum PathCopyStyle {
+        case posix
+        case terminalEscaped
+        case fileURL
+    }
+
+    func copyPathAs(_ style: PathCopyStyle) {
+        let raw = contextState.targetURL?.path
+            ?? contextState.selectedFileURLs.first?.path
+            ?? contextState.directoryURL?.path
+
+        guard let path = raw else {
+            statusMessage = "No file or folder selected."
+            return
+        }
+
+        let formatted: String
+        switch style {
+        case .posix:
+            formatted = path
+        case .terminalEscaped:
+            formatted = path.replacingOccurrences(of: " ", with: "\\ ")
+                           .replacingOccurrences(of: "(", with: "\\(")
+                           .replacingOccurrences(of: ")", with: "\\)")
+                           .replacingOccurrences(of: "[", with: "\\[")
+                           .replacingOccurrences(of: "]", with: "\\]")
+                           .replacingOccurrences(of: "&", with: "\\&")
+                           .replacingOccurrences(of: ";", with: ";")
+        case .fileURL:
+            formatted = URL(fileURLWithPath: path).absoluteString
+        }
+
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(formatted, forType: .string)
+        statusMessage = "Copied path to clipboard."
+    }
+
     func copyClipboardItemToPasteboard(_ item: ClipboardItem) {
         let ok = clipboardService.copyToPasteboard(item)
         statusMessage = ok ? "Copied item to clipboard." : "Failed to copy item to clipboard."
@@ -528,6 +723,33 @@ final class MenuWindowManager: ObservableObject {
 
         do {
             try fileOperationsService.createFile(type: type, at: targetURL)
+            statusMessage = "Created \(targetURL.lastPathComponent)"
+            NSWorkspace.shared.activateFileViewerSelecting([targetURL])
+        } catch {
+            statusMessage = "Create file failed: \(error.localizedDescription)"
+        }
+    }
+
+    func createNewFile(_ template: FileTemplate) {
+        refreshContext(useFinderScript: false)
+
+        let destinationDirectory = resolvedActionDirectory(preferFinderContext: true)
+        let saveURL: URL?
+
+        if let dir = destinationDirectory,
+           fileOperationsService.isWritableDirectory(dir) {
+            saveURL = nextUntitledURL(in: dir, template: template)
+        } else {
+            saveURL = presentSavePanelForNewFile(template: template)
+        }
+
+        guard let targetURL = saveURL else {
+            statusMessage = "Create file cancelled."
+            return
+        }
+
+        do {
+            try fileOperationsService.createFile(template: template, at: targetURL)
             statusMessage = "Created \(targetURL.lastPathComponent)"
             NSWorkspace.shared.activateFileViewerSelecting([targetURL])
         } catch {
@@ -766,6 +988,20 @@ final class MenuWindowManager: ObservableObject {
         }
     }
 
+    private func nextUntitledURL(in directory: URL, template: FileTemplate) -> URL {
+        let fm = FileManager.default
+        var index = 0
+
+        while true {
+            let name = index == 0 ? template.defaultName : "\(template.defaultName) \(index)"
+            let candidate = directory.appendingPathComponent(name).appendingPathExtension(template.extensionString)
+            if !fm.fileExists(atPath: candidate.path) {
+                return candidate
+            }
+            index += 1
+        }
+    }
+
     private func presentSavePanelForNewFile(type: NewFileType) -> URL? {
         hidePanel()
         NSApp.activate(ignoringOtherApps: true)
@@ -784,6 +1020,26 @@ final class MenuWindowManager: ObservableObject {
         }
 
         return selected.appendingPathExtension(type.rawValue)
+    }
+
+    private func presentSavePanelForNewFile(template: FileTemplate) -> URL? {
+        hidePanel()
+        NSApp.activate(ignoringOtherApps: true)
+
+        let panel = NSSavePanel()
+        panel.canCreateDirectories = true
+        panel.allowedContentTypes = []
+        panel.nameFieldStringValue = "\(template.defaultName).\(template.extensionString)"
+        panel.title = "Create New \(template.title)"
+
+        let response = panel.runModal()
+        guard response == .OK, let selected = panel.url else { return nil }
+
+        if selected.pathExtension.lowercased() == template.extensionString {
+            return selected
+        }
+
+        return selected.appendingPathExtension(template.extensionString)
     }
 
     private func presentDirectoryPicker(title: String) -> URL? {

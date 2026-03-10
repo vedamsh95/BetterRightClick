@@ -12,6 +12,18 @@ struct WindowSnapService {
         let visibleFrame: NSRect
     }
 
+    enum SidekickDirection {
+        case left
+        case right
+    }
+    
+    enum MultiSnapLayout {
+        case columns
+        case grid2x2
+        case dualMonitor2x2
+        case mainPlusStack
+    }
+
     enum SnapError: LocalizedError {
         case accessibilityDenied
         case noDisplays
@@ -75,29 +87,421 @@ struct WindowSnapService {
             throw SnapError.noWindowDetected(traceLog)
         }
 
+        lastSnappedWindow = window
+        lastSnappedWindowFrame = frame(of: window)
+
+        executePhysically(window: window, targetRect: targetRect)
+
+        return targetDisplay
+    }
+
+    func snapWindowCustomSpanUnderCursor(
+        columns: Int,
+        rows: Int,
+        startColumn: Int,
+        columnCount: Int,
+        preferredDisplayID: CGDirectDisplayID?,
+        probeLocation: NSPoint?,
+        preferredAppPID: pid_t?
+    ) throws -> DisplayTarget {
+        guard AXIsProcessTrusted() else { throw SnapError.accessibilityDenied }
+        guard columns > 0, rows > 0, startColumn >= 0, columnCount > 0, startColumn + columnCount <= columns else { throw SnapError.invalidGrid }
+
+        let displays = availableDisplays()
+        guard !displays.isEmpty else { throw SnapError.noDisplays }
+
+        let targetDisplay = resolveTargetDisplay(displays: displays, preferredDisplayID: preferredDisplayID, probeLocation: probeLocation)
+        
+        // Calculate a bounding box that spans from startColumn across columnCount
+        let cellWidth = targetDisplay.visibleFrame.width / CGFloat(columns)
+        let totalWidth = cellWidth * CGFloat(columnCount)
+        let x = targetDisplay.visibleFrame.minX + CGFloat(startColumn) * cellWidth
+        
+        let targetRect = NSRect(
+            x: x.rounded(.toNearestOrAwayFromZero),
+            y: targetDisplay.visibleFrame.minY,
+            width: totalWidth.rounded(.toNearestOrAwayFromZero),
+            height: targetDisplay.visibleFrame.height
+        )
+
+        let (windowResult, traceLog) = targetWindowElement(probeLocation: probeLocation, preferredAppPID: preferredAppPID)
+        guard let window = windowResult else {
+            throw SnapError.noWindowDetected(traceLog)
+        }
+
         // Store previous frame for undo
         lastSnappedWindow = window
         lastSnappedWindowFrame = frame(of: window)
 
+        executePhysically(window: window, targetRect: targetRect)
+        return targetDisplay
+    }
+
+    private func executePhysically(window: AXUIElement, targetRect: NSRect) {
         let axPosition = toAXTopLeft(for: targetRect)
         var targetPoint = axPosition
         var targetSize = targetRect.size
+        
         // 1. Safe Size: Shrink the window temporarily so it doesn't collide with screen boundaries during the move
         var safeSize = CGSize(width: 100, height: 100)
         if let safeSizeValue = AXValueCreate(.cgSize, &safeSize) {
             AXUIElementSetAttributeValue(window, kAXSizeAttribute as CFString, safeSizeValue)
         }
         // 2. Move to new coordinate
-        guard let pointValue = AXValueCreate(.cgPoint, &targetPoint),
-              AXUIElementSetAttributeValue(window, kAXPositionAttribute as CFString, pointValue) == .success else {
-            throw SnapError.failedToSetPosition
+        if let pointValue = AXValueCreate(.cgPoint, &targetPoint) {
+            AXUIElementSetAttributeValue(window, kAXPositionAttribute as CFString, pointValue)
         }
         // 3. Expand to final target size
-        guard let sizeValue = AXValueCreate(.cgSize, &targetSize),
-              AXUIElementSetAttributeValue(window, kAXSizeAttribute as CFString, sizeValue) == .success else {
-            throw SnapError.failedToSetSize
+        if let sizeValue = AXValueCreate(.cgSize, &targetSize) {
+            AXUIElementSetAttributeValue(window, kAXSizeAttribute as CFString, sizeValue)
         }
+    }
+
+    func snapSidekick(
+        direction: SidekickDirection,
+        preferredDisplayID: CGDirectDisplayID?,
+        probeLocation: NSPoint?,
+        preferredAppPID: pid_t?
+    ) throws -> DisplayTarget {
+        guard AXIsProcessTrusted() else { throw SnapError.accessibilityDenied }
+
+        let displays = availableDisplays()
+        guard !displays.isEmpty else { throw SnapError.noDisplays }
+
+        let targetDisplay = resolveTargetDisplay(displays: displays, preferredDisplayID: preferredDisplayID, probeLocation: probeLocation)
+        let f = targetDisplay.visibleFrame
+        
+        // 1. Calculate Sidekick Geometry (30%)
+        let sidekickWidth = (f.width * 0.3).rounded(.toNearestOrAwayFromZero)
+        let mainWidth = f.width - sidekickWidth
+        
+        let sidekickRect = NSRect(
+            x: direction == .left ? f.minX : f.maxX - sidekickWidth,
+            y: f.minY,
+            width: sidekickWidth,
+            height: f.height
+        )
+        
+        let mainRect = NSRect(
+            x: direction == .left ? f.minX + sidekickWidth : f.minX,
+            y: f.minY,
+            width: mainWidth,
+            height: f.height
+        )
+
+        // 2. Identify and Snap the Primary Target (Sidekick)
+        let (windowResult, traceLog) = targetWindowElement(probeLocation: probeLocation, preferredAppPID: preferredAppPID)
+        guard let sidekickWindow = windowResult else {
+            throw SnapError.noWindowDetected(traceLog)
+        }
+
+        lastSnappedWindow = sidekickWindow
+        lastSnappedWindowFrame = frame(of: sidekickWindow)
+        executePhysically(window: sidekickWindow, targetRect: sidekickRect)
+
+        // 3. Identify the Secondary Target (Main Window) using CGWindowList Z-Order
+        // We look for the first window directly beneath our sidekick belonging to a standard application.
+        let ownPID = ProcessInfo.processInfo.processIdentifier
+        let sidekickPID = pid(of: sidekickWindow)
+        
+        guard let rawInfo = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] else {
+            return targetDisplay // Return cleanly if we can't find a secondary
+        }
+
+        var secondaryPID: pid_t? = nil
+        var secondaryPoint: NSPoint? = nil
+        
+        for info in rawInfo {
+            guard let layer = info[kCGWindowLayer as String] as? NSNumber, layer.intValue == 0,
+                  let ownerPID = info[kCGWindowOwnerPID as String] as? NSNumber else { continue }
+            
+            let pid = ownerPID.int32Value
+            if pid == ownPID || pid == sidekickPID { continue }
+            
+            // Validate it's a real user app with a dock icon
+            guard let app = NSRunningApplication(processIdentifier: pid), app.activationPolicy == .regular else { continue }
+            
+            // Get center point of this background window for probe detection
+            guard let boundsDict = info[kCGWindowBounds as String] as? NSDictionary else { continue }
+            var bounds = CGRect.zero
+            if CGRectMakeWithDictionaryRepresentation(boundsDict, &bounds) {
+                secondaryPID = pid
+                // Convert CG bounds center back into AppKit for standard AX probing
+                secondaryPoint = NSPoint(x: bounds.midX, y: targetDisplay.visibleFrame.maxY - bounds.midY)
+                break
+            }
+        }
+        
+        // 4. Snap the Secondary Process
+        if let secondaryPID, let (mainWindow, _) = windowElement(forApplicationPID: secondaryPID, excluding: ownPID, near: secondaryPoint, fallbackActivation: true) as? (AXUIElement, String) {
+            executePhysically(window: mainWindow, targetRect: mainRect)
+        }
+
         return targetDisplay
+    }
+
+    func snapMultipleApps(
+        apps: [NSRunningApplication],
+        preferredDisplayID: CGDirectDisplayID?,
+        probeLocation: NSPoint?,
+        layoutMode: MultiSnapLayout = .columns
+    ) throws -> DisplayTarget {
+        guard AXIsProcessTrusted() else { throw SnapError.accessibilityDenied }
+        guard !apps.isEmpty else { throw SnapError.invalidGrid }
+
+        let displays = availableDisplays()
+        guard !displays.isEmpty else { throw SnapError.noDisplays }
+
+        let targetDisplay = resolveTargetDisplay(displays: displays, preferredDisplayID: preferredDisplayID, probeLocation: probeLocation)
+        let f = targetDisplay.visibleFrame
+        let ownPID = ProcessInfo.processInfo.processIdentifier
+        
+        // Determine effective layout — auto-fallback to 2x2 if columns would be < 400px
+        var effectiveLayout = layoutMode
+        if effectiveLayout == .columns && apps.count >= 3 {
+            let candidateWidth = f.width / CGFloat(apps.count)
+            if candidateWidth < 400 && apps.count == 4 {
+                effectiveLayout = .grid2x2
+            }
+        }
+        
+        switch effectiveLayout {
+        case .columns:
+            let rects = calculateEvenHorizontalFrames(bounds: f, count: apps.count)
+            for (index, app) in apps.enumerated() {
+                let pid = app.processIdentifier
+                if pid == ownPID { continue }
+                executeSnapCommand(pid: pid, ownPID: ownPID, index: index, targetRect: rects[index])
+            }
+            
+        case .grid2x2:
+            guard apps.count == 4 else { throw SnapError.invalidGrid }
+            let rects = calculate2x2Frames(bounds: f)
+            for (index, app) in apps.enumerated() {
+                let pid = app.processIdentifier
+                if pid == ownPID { continue }
+                executeSnapCommand(pid: pid, ownPID: ownPID, index: index, targetRect: rects[index])
+            }
+            
+        case .dualMonitor2x2:
+            let allDisplays = availableDisplays()
+            guard apps.count == 4, allDisplays.count >= 2 else {
+                // Fall back to single-screen 2x2
+                guard apps.count == 4 else { throw SnapError.invalidGrid }
+                let rects = calculate2x2Frames(bounds: f)
+                for (index, app) in apps.enumerated() {
+                    let pid = app.processIdentifier
+                    if pid == ownPID { continue }
+                    executeSnapCommand(pid: pid, ownPID: ownPID, index: index, targetRect: rects[index])
+                }
+                break
+            }
+            // 2 apps per monitor, strictly within each monitor's visibleFrame
+            let f1 = allDisplays[0].visibleFrame
+            let f2 = allDisplays[1].visibleFrame
+            let rects1 = calculateEvenHorizontalFrames(bounds: f1, count: 2)
+            let rects2 = calculateEvenHorizontalFrames(bounds: f2, count: 2)
+            let dualRects = rects1 + rects2
+            for (index, app) in apps.enumerated() {
+                let pid = app.processIdentifier
+                if pid == ownPID { continue }
+                executeSnapCommand(pid: pid, ownPID: ownPID, index: index, targetRect: dualRects[index])
+            }
+            
+        case .mainPlusStack:
+            guard apps.count >= 2 else { throw SnapError.invalidGrid }
+            let rects = calculateMainPlusStackFrames(bounds: f, count: apps.count)
+            for (index, app) in apps.enumerated() {
+                let pid = app.processIdentifier
+                if pid == ownPID { continue }
+                executeSnapCommand(pid: pid, ownPID: ownPID, index: index, targetRect: rects[index])
+            }
+        }
+
+        return targetDisplay
+    }
+    
+    // MARK: - Flawless Grid Math (edge-clamped, no sub-pixel gaps)
+    
+    private func calculateEvenHorizontalFrames(bounds: NSRect, count: Int) -> [NSRect] {
+        guard count > 0 else { return [] }
+        let cellWidth = (bounds.width / CGFloat(count)).rounded(.toNearestOrAwayFromZero)
+        var rects: [NSRect] = []
+        for i in 0..<count {
+            let x = bounds.minX + CGFloat(i) * cellWidth
+            // Last cell clamps to maxX to eliminate sub-pixel gaps
+            let w = (i == count - 1) ? (bounds.maxX - x) : cellWidth
+            rects.append(NSRect(x: x.rounded(.toNearestOrAwayFromZero), y: bounds.minY, width: w.rounded(.toNearestOrAwayFromZero), height: bounds.height))
+        }
+        return rects
+    }
+    
+    private func calculate2x2Frames(bounds: NSRect) -> [NSRect] {
+        let halfW = (bounds.width / 2.0).rounded(.toNearestOrAwayFromZero)
+        let halfH = (bounds.height / 2.0).rounded(.toNearestOrAwayFromZero)
+        let rightW = bounds.maxX - (bounds.minX + halfW)
+        let bottomH = bounds.maxY - (bounds.minY + halfH)
+        return [
+            NSRect(x: bounds.minX, y: bounds.minY, width: halfW, height: halfH),
+            NSRect(x: bounds.minX + halfW, y: bounds.minY, width: rightW, height: halfH),
+            NSRect(x: bounds.minX, y: bounds.minY + halfH, width: halfW, height: bottomH),
+            NSRect(x: bounds.minX + halfW, y: bounds.minY + halfH, width: rightW, height: bottomH)
+        ]
+    }
+    
+    private func calculateMainPlusStackFrames(bounds: NSRect, count: Int) -> [NSRect] {
+        let mainWidth = (bounds.width * 0.7).rounded(.toNearestOrAwayFromZero)
+        let stackWidth = bounds.maxX - (bounds.minX + mainWidth)
+        let stackCount = count - 1
+        let stackCellH = (bounds.height / CGFloat(stackCount)).rounded(.toNearestOrAwayFromZero)
+        
+        var rects: [NSRect] = []
+        // Main panel (70% left)
+        rects.append(NSRect(x: bounds.minX, y: bounds.minY, width: mainWidth, height: bounds.height))
+        // Stack (30% right, vertical slices)
+        for i in 0..<stackCount {
+            let y = bounds.minY + CGFloat(i) * stackCellH
+            let h = (i == stackCount - 1) ? (bounds.maxY - y) : stackCellH
+            rects.append(NSRect(x: bounds.minX + mainWidth, y: y, width: stackWidth, height: h.rounded(.toNearestOrAwayFromZero)))
+        }
+        return rects
+    }
+
+    private func executeSnapCommand(pid: pid_t, ownPID: pid_t, index: Int, targetRect: NSRect) {
+        if let (window, _) = windowElement(forApplicationPID: pid, excluding: ownPID, near: nil, fallbackActivation: true) as? (AXUIElement, String) {
+            if index == 0 {
+                lastSnappedWindow = window
+                lastSnappedWindowFrame = frame(of: window)
+            }
+            executePhysically(window: window, targetRect: targetRect)
+        }
+        Thread.sleep(forTimeInterval: 0.05)
+    }
+
+    func distributeAppsToGridCell(
+        apps: [NSRunningApplication],
+        columns: Int,
+        rows: Int,
+        column: Int,
+        rowFromTop: Int,
+        preferredDisplayID: CGDirectDisplayID?,
+        probeLocation: NSPoint?
+    ) throws -> DisplayTarget {
+        guard AXIsProcessTrusted() else { throw SnapError.accessibilityDenied }
+        guard !apps.isEmpty else { throw SnapError.invalidGrid }
+        guard columns > 0, rows > 0, column >= 0, rowFromTop >= 0, column < columns, rowFromTop < rows else { throw SnapError.invalidGrid }
+
+        let displays = availableDisplays()
+        guard !displays.isEmpty else { throw SnapError.noDisplays }
+
+        let targetDisplay = resolveTargetDisplay(displays: displays, preferredDisplayID: preferredDisplayID, probeLocation: probeLocation)
+        let boundingBox = rectForGrid(visibleFrame: targetDisplay.visibleFrame, columns: columns, rows: rows, column: column, rowFromTop: rowFromTop)
+        
+        // 2. Divide this specific bounding box among the apps
+        let appCount = apps.count
+        let cellWidth = boundingBox.width / CGFloat(appCount)
+        let ownPID = ProcessInfo.processInfo.processIdentifier
+        
+        for (index, app) in apps.enumerated() {
+            let pid = app.processIdentifier
+            if pid == ownPID { continue }
+            
+            let rectX = boundingBox.minX + (CGFloat(index) * cellWidth)
+            let subRect = NSRect(
+                x: rectX.rounded(.toNearestOrAwayFromZero),
+                y: boundingBox.minY,
+                width: cellWidth.rounded(.toNearestOrAwayFromZero),
+                height: boundingBox.height
+            )
+            
+            executeSnapCommand(pid: pid, ownPID: ownPID, index: index, targetRect: subRect)
+        }
+        
+        return targetDisplay
+    }
+
+    func distributeAppsToCustomSpan(
+        apps: [NSRunningApplication],
+        columns: Int,
+        rows: Int,
+        startColumn: Int,
+        columnCount: Int,
+        preferredDisplayID: CGDirectDisplayID?,
+        probeLocation: NSPoint?
+    ) throws -> DisplayTarget {
+        guard AXIsProcessTrusted() else { throw SnapError.accessibilityDenied }
+        guard !apps.isEmpty else { throw SnapError.invalidGrid }
+        guard columns > 0, rows > 0, startColumn >= 0, columnCount > 0, startColumn + columnCount <= columns else { throw SnapError.invalidGrid }
+
+        let displays = availableDisplays()
+        guard !displays.isEmpty else { throw SnapError.noDisplays }
+
+        let targetDisplay = resolveTargetDisplay(displays: displays, preferredDisplayID: preferredDisplayID, probeLocation: probeLocation)
+        
+        let displayCellWidth = targetDisplay.visibleFrame.width / CGFloat(columns)
+        let totalWidth = displayCellWidth * CGFloat(columnCount)
+        let x = targetDisplay.visibleFrame.minX + CGFloat(startColumn) * displayCellWidth
+        
+        let boundingBox = NSRect(
+            x: x.rounded(.toNearestOrAwayFromZero),
+            y: targetDisplay.visibleFrame.minY,
+            width: totalWidth.rounded(.toNearestOrAwayFromZero),
+            height: targetDisplay.visibleFrame.height
+        )
+        
+        let appCount = apps.count
+        let subCellWidth = boundingBox.width / CGFloat(appCount)
+        let ownPID = ProcessInfo.processInfo.processIdentifier
+        
+        for (index, app) in apps.enumerated() {
+            let pid = app.processIdentifier
+            if pid == ownPID { continue }
+            
+            let rectX = boundingBox.minX + (CGFloat(index) * subCellWidth)
+            let subRect = NSRect(
+                x: rectX.rounded(.toNearestOrAwayFromZero),
+                y: boundingBox.minY,
+                width: subCellWidth.rounded(.toNearestOrAwayFromZero),
+                height: boundingBox.height
+            )
+            
+            executeSnapCommand(pid: pid, ownPID: ownPID, index: index, targetRect: subRect)
+        }
+        
+        return targetDisplay
+    }
+
+    func swapApps(pidA: pid_t, pidB: pid_t) throws {
+        guard AXIsProcessTrusted() else { throw SnapError.accessibilityDenied }
+        
+        let ownPID = ProcessInfo.processInfo.processIdentifier
+
+        // 1. Fetch Windows using Fallback Activation
+        guard let (windowA, _) = windowElement(forApplicationPID: pidA, excluding: ownPID, near: nil, fallbackActivation: true) as? (AXUIElement, String) else {
+            throw SnapError.noWindowDetected("Failed to capture App A")
+        }
+        guard let (windowB, _) = windowElement(forApplicationPID: pidB, excluding: ownPID, near: nil, fallbackActivation: true) as? (AXUIElement, String) else {
+            throw SnapError.noWindowDetected("Failed to capture App B")
+        }
+        
+        // 2. Read existing bounds accurately via AppKit math wrapper
+        guard let frameA = frame(of: windowA), let frameB = frame(of: windowB) else {
+            throw SnapError.failedToSetSize // generic error fallback
+        }
+        
+        // Ensure accurate AppKit -> AX coordinate conversion for the target frames
+        // BUT wait, `executePhysically` expects an AppKit NSRect. `frame(of:)` returns AppKit NSRect!
+        // We can just swap the AppKit rects directly!
+        let targetRectForA = frameB
+        let targetRectForB = frameA
+        
+        // 3. Track state
+        lastSnappedWindow = windowA
+        lastSnappedWindowFrame = frameA
+
+        // 4. Execute physical move sequence on both
+        executePhysically(window: windowA, targetRect: targetRectForA)
+        executePhysically(window: windowB, targetRect: targetRectForB)
     }
 
     // MARK: - Undo Snap

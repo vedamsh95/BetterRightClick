@@ -7,12 +7,36 @@ struct ActionsTab: View {
         ScrollView(.vertical, showsIndicators: true) {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 8) {
-                    Menu("New File") {
-                        ForEach(NewFileType.allCases) { type in
-                            Button(type.label) {
-                                windowManager.createNewFile(type)
+                    let analysis = FileContextAnalyzer.analyze(at: windowManager.contextState.directoryURL)
+                    
+                    Menu {
+                        // Section 1: Recommended
+                        Section("Recommended for this folder") {
+                            ForEach(analysis.recommended) { template in
+                                Button {
+                                    windowManager.createNewFile(template)
+                                } label: {
+                                    Label(template.title, systemImage: template.icon)
+                                }
                             }
                         }
+                        
+                        Divider()
+                        
+                        // Section 2: All Types grouped by category
+                        ForEach(FileContextAnalyzer.categorizedTemplates, id: \.category) { group in
+                            Section(group.category) {
+                                ForEach(group.templates) { template in
+                                    Button {
+                                        windowManager.createNewFile(template)
+                                    } label: {
+                                        Label(template.title, systemImage: template.icon)
+                                    }
+                                }
+                            }
+                        }
+                    } label: {
+                        Label("New File", systemImage: "doc.badge.plus")
                     }
 
                     Button("Take Screenshot") {
@@ -172,7 +196,14 @@ struct ActionsTab: View {
             switch context.targetKind {
             case .folder:
                 HStack(spacing: 8) {
-                    Button("New .md") { windowManager.createNewFile(.md) }
+                    Menu("Copy Path As") {
+                        Button("POSIX Path")        { windowManager.copyPathAs(.posix) }
+                        Button("Terminal Escaped")  { windowManager.copyPathAs(.terminalEscaped) }
+                        Button("File URL")          { windowManager.copyPathAs(.fileURL) }
+                    }
+                    .fixedSize()
+                    
+                    Button("New .md") { windowManager.createNewFile(FileContextAnalyzer.mdTemplate) }
                         .buttonStyle(.bordered)
                     Button("Flatten This Folder") { windowManager.flattenCurrentDirectory() }
                         .buttonStyle(.bordered)
@@ -183,6 +214,13 @@ struct ActionsTab: View {
                 }
             case .image:
                 HStack(spacing: 8) {
+                    Menu("Copy Path As") {
+                        Button("POSIX Path")        { windowManager.copyPathAs(.posix) }
+                        Button("Terminal Escaped")  { windowManager.copyPathAs(.terminalEscaped) }
+                        Button("File URL")          { windowManager.copyPathAs(.fileURL) }
+                    }
+                    .fixedSize()
+                    
                     Button("Open Image") { windowManager.openTargetWithDefaultApp() }
                         .buttonStyle(.bordered)
                     Button("Reveal in Finder") { windowManager.openTargetInFinder() }
@@ -192,15 +230,29 @@ struct ActionsTab: View {
                 }
             case .text:
                 HStack(spacing: 8) {
+                    Menu("Copy Path As") {
+                        Button("POSIX Path")        { windowManager.copyPathAs(.posix) }
+                        Button("Terminal Escaped")  { windowManager.copyPathAs(.terminalEscaped) }
+                        Button("File URL")          { windowManager.copyPathAs(.fileURL) }
+                    }
+                    .fixedSize()
+                    
                     Button("Open Text File") { windowManager.openTargetWithDefaultApp() }
                         .buttonStyle(.bordered)
-                    Button("New .txt Here") { windowManager.createNewFile(.txt) }
+                    Button("New .txt Here") { windowManager.createNewFile(FileContextAnalyzer.txtTemplate) }
                         .buttonStyle(.bordered)
                     Button("Delete Permanently") { windowManager.deleteTargetPermanently() }
                         .buttonStyle(.bordered)
                 }
             case .file:
                 HStack(spacing: 8) {
+                    Menu("Copy Path As") {
+                        Button("POSIX Path")        { windowManager.copyPathAs(.posix) }
+                        Button("Terminal Escaped")  { windowManager.copyPathAs(.terminalEscaped) }
+                        Button("File URL")          { windowManager.copyPathAs(.fileURL) }
+                    }
+                    .fixedSize()
+                    
                     Button("Open") { windowManager.openTargetWithDefaultApp() }
                         .buttonStyle(.bordered)
                     Button("Reveal") { windowManager.openTargetInFinder() }

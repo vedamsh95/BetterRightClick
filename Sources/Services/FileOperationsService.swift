@@ -26,6 +26,24 @@ final class FileOperationsService {
         return candidate
     }
 
+    @discardableResult
+    func createFile(template: FileTemplate, in directory: URL) throws -> URL {
+        let fm = FileManager.default
+        let baseName = template.defaultName
+        let ext = template.extensionString
+
+        var candidate = directory.appendingPathComponent("\(baseName).\(ext)")
+        var counter = 1
+        while fm.fileExists(atPath: candidate.path) {
+            candidate = directory.appendingPathComponent("\(baseName) \(counter).\(ext)")
+            counter += 1
+        }
+
+        try createFile(template: template, at: candidate)
+
+        return candidate
+    }
+
     func createFile(type: NewFileType, at url: URL) throws {
         let fm = FileManager.default
 
@@ -54,6 +72,10 @@ final class FileOperationsService {
                 )
             }
         }
+    }
+
+    func createFile(template: FileTemplate, at url: URL) throws {
+        try template.content.write(to: url, atomically: true, encoding: .utf8)
     }
 
     func isWritableDirectory(_ url: URL) -> Bool {
