@@ -38,7 +38,7 @@ struct SnapTab: View {
                 
                 // Icon-only action buttons with tooltips
                 Button {
-                    windowManager.swapTopTwoWindows()
+                    windowManager.snap.swapApps(appA: windowManager.runningApps[0], appB: windowManager.runningApps[1])
                 } label: {
                     Image(systemName: "arrow.left.arrow.right")
                 }
@@ -47,7 +47,7 @@ struct SnapTab: View {
                 .controlSize(.small)
                 
                 Button {
-                    windowManager.refreshSnapDisplays()
+                    windowManager.snap.refreshSnapDisplays()
                     refreshApps()
                     if selectedDisplay != "auto",
                        !windowManager.snapDisplays.contains(where: { "\($0.id)" == selectedDisplay }) {
@@ -95,7 +95,7 @@ struct SnapTab: View {
                 }
                 Spacer()
                 Button("Undo") {
-                    windowManager.undoSnap()
+                    windowManager.snap.undoSnap()
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.small)
@@ -104,7 +104,7 @@ struct SnapTab: View {
             .padding(.vertical, 6)
         }
         .onAppear {
-            windowManager.refreshSnapDisplays()
+            windowManager.snap.refreshSnapDisplays()
             if selectedDisplay != "auto",
                !windowManager.snapDisplays.contains(where: { "\($0.id)" == selectedDisplay }) {
                 selectedDisplay = "auto"
@@ -205,7 +205,7 @@ struct SnapTab: View {
                 subtitle: evenGridDescription(for: count),
                 tint: Color.accentColor
             ) {
-                windowManager.snapEvenGrid(apps: selectedApps, preferredDisplayID: selectedDisplayID)
+                windowManager.snap.snapEvenGrid(apps: selectedApps, preferredDisplayID: selectedDisplayID)
                 selectedPIDs.removeAll()
             }
 
@@ -222,7 +222,7 @@ struct SnapTab: View {
                         let hero = reordered.remove(at: heroIndex)
                         reordered.insert(hero, at: 0)
                     }
-                    windowManager.snapMainPlusStack(apps: reordered, preferredDisplayID: selectedDisplayID)
+                    windowManager.snap.snapMainPlusStack(apps: reordered, preferredDisplayID: selectedDisplayID)
                     selectedPIDs.removeAll()
                     heroIndex = 0
                 }
@@ -267,7 +267,7 @@ struct SnapTab: View {
                     subtitle: "Even spread across monitors",
                     tint: Color.indigo
                 ) {
-                    windowManager.distributeToScreens(apps: selectedApps)
+                    windowManager.snap.distributeToScreens(apps: selectedApps)
                     selectedPIDs.removeAll()
                 }
             }
@@ -280,7 +280,7 @@ struct SnapTab: View {
                     subtitle: "Teleport to each other's position",
                     tint: Color.purple
                 ) {
-                    windowManager.swapApps(appA: selectedApps[0], appB: selectedApps[1])
+                    windowManager.snap.swapApps(appA: selectedApps[0], appB: selectedApps[1])
                     selectedPIDs.removeAll()
                 }
             }
@@ -366,7 +366,7 @@ struct SnapTab: View {
             
             HStack(spacing: 8) {
                 Button {
-                    windowManager.snapSidekick(direction: .left, preferredDisplayID: selectedDisplayID)
+                    windowManager.snap.snapSidekick(direction: .left, preferredDisplayID: selectedDisplayID)
                 } label: {
                     Label("Left", systemImage: "sidebar.left")
                 }
@@ -375,7 +375,7 @@ struct SnapTab: View {
                 .frame(maxWidth: .infinity)
                 
                 Button {
-                    windowManager.snapSidekick(direction: .right, preferredDisplayID: selectedDisplayID)
+                    windowManager.snap.snapSidekick(direction: .right, preferredDisplayID: selectedDisplayID)
                 } label: {
                     Label("Right", systemImage: "sidebar.right")
                 }
@@ -420,7 +420,7 @@ struct SnapTab: View {
                 HStack(spacing: 6) {
                     ForEach(0..<3, id: \.self) { column in
                         Button {
-                            windowManager.snapWindowToGrid(
+                            windowManager.snap.snapWindowToGrid(
                                 columns: 3, rows: 3,
                                 column: column, rowFromTop: row,
                                 preferredDisplayID: selectedDisplayID
@@ -443,7 +443,7 @@ struct SnapTab: View {
 
     private func snapIconButton(icon: String, help: String, columns: Int, rows: Int, column: Int, rowFromTop: Int) -> some View {
         Button {
-            windowManager.snapWindowToGrid(
+            windowManager.snap.snapWindowToGrid(
                 columns: columns, rows: rows,
                 column: column, rowFromTop: rowFromTop,
                 preferredDisplayID: selectedDisplayID
@@ -460,7 +460,7 @@ struct SnapTab: View {
 
     private func snapIconButton(icon: String, help: String, columns: Int, rows: Int, customSpan: (startColumn: Int, columnCount: Int)) -> some View {
         Button {
-            windowManager.snapWindowCustomSpan(
+            windowManager.snap.snapWindowCustomSpan(
                 columns: columns, rows: rows,
                 startColumn: customSpan.startColumn,
                 columnCount: customSpan.columnCount,

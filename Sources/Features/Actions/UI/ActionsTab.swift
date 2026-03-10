@@ -14,7 +14,7 @@ struct ActionsTab: View {
                         Section("Recommended for this folder") {
                             ForEach(analysis.recommended) { template in
                                 Button {
-                                    windowManager.createNewFile(template)
+                                    windowManager.actions.createNewFile(template)
                                 } label: {
                                     Label(template.title, systemImage: template.icon)
                                 }
@@ -28,7 +28,7 @@ struct ActionsTab: View {
                             Section(group.category) {
                                 ForEach(group.templates) { template in
                                     Button {
-                                        windowManager.createNewFile(template)
+                                        windowManager.actions.createNewFile(template)
                                     } label: {
                                         Label(template.title, systemImage: template.icon)
                                     }
@@ -40,15 +40,15 @@ struct ActionsTab: View {
                     }
 
                     Button("Take Screenshot") {
-                        windowManager.takeScreenshot()
+                        windowManager.actions.takeScreenshot()
                     }
 
                     Button("Minimize All Apps") {
-                        windowManager.minimizeAllActiveApps()
+                        windowManager.switcher.minimizeAllActiveApps()
                     }
 
                     Button("Flatten Folder") {
-                        windowManager.flattenCurrentDirectory()
+                        windowManager.actions.flattenCurrentDirectory()
                     }
                 }
 
@@ -60,7 +60,7 @@ struct ActionsTab: View {
                         HStack(spacing: 8) {
                             ForEach(windowManager.pinnedApps) { pinned in
                                 Button(pinned.name) {
-                                    windowManager.activatePinnedApp(pinned)
+                                    windowManager.switcher.activatePinnedApp(pinned)
                                 }
                                 .buttonStyle(.bordered)
                             }
@@ -80,12 +80,12 @@ struct ActionsTab: View {
                                 .frame(maxWidth: .infinity, alignment: .leading)
 
                             Button("Copy") {
-                                windowManager.copyClipboardItemToPasteboard(item)
+                                windowManager.switcher.copyClipboardItemToPasteboard(item)
                             }
                             .buttonStyle(.bordered)
 
                             Button("Paste") {
-                                windowManager.pasteClipboardItem(item)
+                                windowManager.switcher.pasteClipboardItem(item)
                             }
                             .buttonStyle(.borderedProminent)
                             .disabled(!canPaste(item))
@@ -105,7 +105,7 @@ struct ActionsTab: View {
                                 .fontWeight(.bold)
                             Spacer()
                             Button("Close") {
-                                windowManager.clearLookup()
+                                windowManager.settings.clearLookup()
                             }
                             .buttonStyle(.plain)
                             .font(.caption)
@@ -175,20 +175,20 @@ struct ActionsTab: View {
 
             HStack(spacing: 8) {
                 Menu("Format Text") {
-                    Button("Copy as Plain Text") { windowManager.formatCurrentTextContext(style: .plainText) }
-                    Button("Convert to UPPERCASE") { windowManager.formatCurrentTextContext(style: .uppercase) }
-                    Button("lowercase") { windowManager.formatCurrentTextContext(style: .lowercase) }
-                    Button("Title Case") { windowManager.formatCurrentTextContext(style: .titleCase) }
+                    Button("Copy as Plain Text") { windowManager.actions.formatCurrentTextContext(style: .plainText) }
+                    Button("Convert to UPPERCASE") { windowManager.actions.formatCurrentTextContext(style: .uppercase) }
+                    Button("lowercase") { windowManager.actions.formatCurrentTextContext(style: .lowercase) }
+                    Button("Title Case") { windowManager.actions.formatCurrentTextContext(style: .titleCase) }
                 }
                 .fixedSize()
 
                 Button("Lookup") {
-                    windowManager.lookupCurrentTextContext()
+                    windowManager.actions.lookupCurrentTextContext()
                 }
                 .buttonStyle(.bordered)
 
                 Button("OCR Text") {
-                    windowManager.ocrImage()
+                    windowManager.actions.ocrImage()
                 }
                 .buttonStyle(.bordered)
             }
@@ -197,67 +197,67 @@ struct ActionsTab: View {
             case .folder:
                 HStack(spacing: 8) {
                     Menu("Copy Path As") {
-                        Button("POSIX Path")        { windowManager.copyPathAs(.posix) }
-                        Button("Terminal Escaped")  { windowManager.copyPathAs(.terminalEscaped) }
-                        Button("File URL")          { windowManager.copyPathAs(.fileURL) }
+                        Button("POSIX Path")        { windowManager.actions.copyPathAs(.posix) }
+                        Button("Terminal Escaped")  { windowManager.actions.copyPathAs(.terminalEscaped) }
+                        Button("File URL")          { windowManager.actions.copyPathAs(.fileURL) }
                     }
                     .fixedSize()
                     
-                    Button("New .md") { windowManager.createNewFile(FileContextAnalyzer.mdTemplate) }
+                    Button("New .md") { windowManager.actions.createNewFile(FileContextAnalyzer.mdTemplate) }
                         .buttonStyle(.bordered)
-                    Button("Flatten This Folder") { windowManager.flattenCurrentDirectory() }
+                    Button("Flatten This Folder") { windowManager.actions.flattenCurrentDirectory() }
                         .buttonStyle(.bordered)
-                    Button("Open Folder") { windowManager.openTargetInFinder() }
+                    Button("Open Folder") { windowManager.actions.openTargetInFinder() }
                         .buttonStyle(.bordered)
-                    Button("Delete Permanently") { windowManager.deleteTargetPermanently() }
+                    Button("Delete Permanently") { windowManager.actions.deleteTargetPermanently() }
                         .buttonStyle(.bordered)
                 }
             case .image:
                 HStack(spacing: 8) {
                     Menu("Copy Path As") {
-                        Button("POSIX Path")        { windowManager.copyPathAs(.posix) }
-                        Button("Terminal Escaped")  { windowManager.copyPathAs(.terminalEscaped) }
-                        Button("File URL")          { windowManager.copyPathAs(.fileURL) }
+                        Button("POSIX Path")        { windowManager.actions.copyPathAs(.posix) }
+                        Button("Terminal Escaped")  { windowManager.actions.copyPathAs(.terminalEscaped) }
+                        Button("File URL")          { windowManager.actions.copyPathAs(.fileURL) }
                     }
                     .fixedSize()
                     
-                    Button("Open Image") { windowManager.openTargetWithDefaultApp() }
+                    Button("Open Image") { windowManager.actions.openTargetWithDefaultApp() }
                         .buttonStyle(.bordered)
-                    Button("Reveal in Finder") { windowManager.openTargetInFinder() }
+                    Button("Reveal in Finder") { windowManager.actions.openTargetInFinder() }
                         .buttonStyle(.bordered)
-                    Button("Delete Permanently") { windowManager.deleteTargetPermanently() }
+                    Button("Delete Permanently") { windowManager.actions.deleteTargetPermanently() }
                         .buttonStyle(.bordered)
                 }
             case .text:
                 HStack(spacing: 8) {
                     Menu("Copy Path As") {
-                        Button("POSIX Path")        { windowManager.copyPathAs(.posix) }
-                        Button("Terminal Escaped")  { windowManager.copyPathAs(.terminalEscaped) }
-                        Button("File URL")          { windowManager.copyPathAs(.fileURL) }
+                        Button("POSIX Path")        { windowManager.actions.copyPathAs(.posix) }
+                        Button("Terminal Escaped")  { windowManager.actions.copyPathAs(.terminalEscaped) }
+                        Button("File URL")          { windowManager.actions.copyPathAs(.fileURL) }
                     }
                     .fixedSize()
                     
-                    Button("Open Text File") { windowManager.openTargetWithDefaultApp() }
+                    Button("Open Text File") { windowManager.actions.openTargetWithDefaultApp() }
                         .buttonStyle(.bordered)
-                    Button("New .txt Here") { windowManager.createNewFile(FileContextAnalyzer.txtTemplate) }
+                    Button("New .txt Here") { windowManager.actions.createNewFile(FileContextAnalyzer.txtTemplate) }
                         .buttonStyle(.bordered)
-                    Button("Delete Permanently") { windowManager.deleteTargetPermanently() }
+                    Button("Delete Permanently") { windowManager.actions.deleteTargetPermanently() }
                         .buttonStyle(.bordered)
                 }
             case .file:
                 HStack(spacing: 8) {
                     Menu("Copy Path As") {
-                        Button("POSIX Path")        { windowManager.copyPathAs(.posix) }
-                        Button("Terminal Escaped")  { windowManager.copyPathAs(.terminalEscaped) }
-                        Button("File URL")          { windowManager.copyPathAs(.fileURL) }
+                        Button("POSIX Path")        { windowManager.actions.copyPathAs(.posix) }
+                        Button("Terminal Escaped")  { windowManager.actions.copyPathAs(.terminalEscaped) }
+                        Button("File URL")          { windowManager.actions.copyPathAs(.fileURL) }
                     }
                     .fixedSize()
                     
-                    Button("Open") { windowManager.openTargetWithDefaultApp() }
+                    Button("Open") { windowManager.actions.openTargetWithDefaultApp() }
                         .buttonStyle(.bordered)
-                    Button("Reveal") { windowManager.openTargetInFinder() }
+                    Button("Reveal") { windowManager.actions.openTargetInFinder() }
                         .buttonStyle(.bordered)
-                    Button("Delete Permanently") { windowManager.deleteTargetPermanently() }
+                    Button("Delete Permanently") { windowManager.actions.deleteTargetPermanently() }
                         .buttonStyle(.bordered)
                 }
             case .none:

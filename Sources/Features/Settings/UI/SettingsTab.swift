@@ -13,8 +13,8 @@ struct SettingsTab: View {
             .padding(.bottom, 2)
         }
         .onAppear {
-            windowManager.refreshPermissionsAndContext()
-            windowManager.refreshSnapDisplays()
+            windowManager.settings.refreshPermissionsAndContext()
+            windowManager.snap.refreshSnapDisplays()
         }
     }
 
@@ -25,7 +25,7 @@ struct SettingsTab: View {
                     .font(.headline)
                 Spacer()
                 Button("Refresh") {
-                    windowManager.refreshPermissionsAndContext()
+                    windowManager.settings.refreshPermissionsAndContext()
                 }
                 .buttonStyle(.bordered)
             }
@@ -35,7 +35,7 @@ struct SettingsTab: View {
                 granted: windowManager.permissionSnapshot.accessibilityGranted,
                 detail: "Required for context probes and window snap actions.",
                 actionTitle: "Grant",
-                action: { windowManager.requestAccessibilityAccess() }
+                action: { windowManager.settings.requestAccessibilityAccess() }
             )
 
             permissionRow(
@@ -43,7 +43,7 @@ struct SettingsTab: View {
                 granted: windowManager.permissionSnapshot.appleEventsGranted,
                 detail: "Used for automation fallback paths.",
                 actionTitle: "Grant",
-                action: { windowManager.requestAppleEventsAccess() }
+                action: { windowManager.settings.requestAppleEventsAccess() }
             )
 
             permissionRow(
@@ -51,7 +51,7 @@ struct SettingsTab: View {
                 granted: windowManager.permissionSnapshot.screenRecordingGranted,
                 detail: "Required for screenshot and screen content flows.",
                 actionTitle: "Grant",
-                action: { windowManager.requestScreenRecordingAccess() }
+                action: { windowManager.settings.requestScreenRecordingAccess() }
             )
 
             Text("Apple Events Entitlement: \(windowManager.permissionSnapshot.appleEventsEntitled ? "Yes" : "No")")
@@ -85,7 +85,7 @@ struct SettingsTab: View {
                             // Also try explicitly opening the correct TCC section
                             NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation")!)
                             
-                            windowManager.refreshPermissionsAndContext()
+                            windowManager.settings.refreshPermissionsAndContext()
                         }
                         .buttonStyle(.borderedProminent)
                         .tint(.orange)
@@ -106,19 +106,19 @@ struct SettingsTab: View {
                     .font(.headline)
                 Spacer()
                 Button("Copy Diagnostics") {
-                    windowManager.copyDiagnosticsSnapshot()
+                    windowManager.settings.copyDiagnosticsSnapshot()
                 }
                 .buttonStyle(.bordered)
             }
 
             HStack(spacing: 8) {
                 Button("Reveal App") {
-                    windowManager.revealThisAppInFinder()
+                    windowManager.settings.revealThisAppInFinder()
                 }
                 .buttonStyle(.bordered)
 
                 Button("Copy App Path") {
-                    windowManager.copyAppBundlePath()
+                    windowManager.settings.copyAppBundlePath()
                 }
                 .buttonStyle(.bordered)
             }

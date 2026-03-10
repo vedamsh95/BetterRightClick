@@ -26,6 +26,10 @@
 		D36BA34A6F6F93A0397EE589 /* ContextState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B603F4CC94D8BEC4AEE8884 /* ContextState.swift */; };
 		E2CD11C407439455848226BA /* SnapTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CC56BDA7F64852A1A23FD8A /* SnapTab.swift */; };
 		EBC0CF45E0E457D16D4A72CA /* SettingsTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = C11D9E32881BD3618E4DCFB4 /* SettingsTab.swift */; };
+		F1E70001B23FE1F92717808C /* SnapManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E70005B23FE1F92717808C /* SnapManager.swift */; };
+		F1E70002B23FE1F92717808C /* ActionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E70006B23FE1F92717808C /* ActionManager.swift */; };
+		F1E70003B23FE1F92717808C /* SwitcherManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E70007B23FE1F92717808C /* SwitcherManager.swift */; };
+		F1E70004B23FE1F92717808C /* SettingsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E70008B23FE1F92717808C /* SettingsManager.swift */; };
 		F4C892E75C3D7C6EA89EEAC8 /* ClipboardItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E96D11FD382F413FD579CF4 /* ClipboardItem.swift */; };
 		FE7A32CCE6DD31A36586D478 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AA8E259530C8D1E1089EDB8 /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
@@ -54,13 +58,149 @@
 		E7033C1D429A47C512236236 /* BetterRightClickApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BetterRightClickApp.swift; sourceTree = "<group>"; };
 		E86A369529F2A37A01A8E355 /* PermissionStateMachine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionStateMachine.swift; sourceTree = "<group>"; };
 		F04281E472E2D50637D43183 /* FileOperationsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileOperationsService.swift; sourceTree = "<group>"; };
+		F1E70005B23FE1F92717808C /* SnapManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapManager.swift; sourceTree = "<group>"; };
+		F1E70006B23FE1F92717808C /* ActionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionManager.swift; sourceTree = "<group>"; };
+		F1E70007B23FE1F92717808C /* SwitcherManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwitcherManager.swift; sourceTree = "<group>"; };
+		F1E70008B23FE1F92717808C /* SettingsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
+		001A_ACTIONS_LOGIC /* Logic */ = {
+			isa = PBXGroup;
+			children = (
+				F1E70006B23FE1F92717808C /* ActionManager.swift */,
+			);
+			path = Logic;
+			sourceTree = "<group>";
+		};
+		001A_ACTIONS_UI /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				965CF468D822DA8C302ECBA7 /* ActionsTab.swift */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		001B_SNAP_LOGIC /* Logic */ = {
+			isa = PBXGroup;
+			children = (
+				F1E70005B23FE1F92717808C /* SnapManager.swift */,
+				B2643170ECB6083E6A3CD662 /* WindowSnapService.swift */,
+			);
+			path = Logic;
+			sourceTree = "<group>";
+		};
+		001B_SNAP_UI /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				6CC56BDA7F64852A1A23FD8A /* SnapTab.swift */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		001C_SWITCHER_LOGIC /* Logic */ = {
+			isa = PBXGroup;
+			children = (
+				F1E70007B23FE1F92717808C /* SwitcherManager.swift */,
+			);
+			path = Logic;
+			sourceTree = "<group>";
+		};
+		001C_SWITCHER_UI /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				668CFA826DDC2B797A5B4BFE /* AppIconView.swift */,
+				1A95A780B23FE1F92717808C /* SwitcherTab.swift */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		001D_SETTINGS_LOGIC /* Logic */ = {
+			isa = PBXGroup;
+			children = (
+				F1E70008B23FE1F92717808C /* SettingsManager.swift */,
+			);
+			path = Logic;
+			sourceTree = "<group>";
+		};
+		001D_SETTINGS_UI /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				C11D9E32881BD3618E4DCFB4 /* SettingsTab.swift */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		002A_ACTIONS /* Actions */ = {
+			isa = PBXGroup;
+			children = (
+				001A_ACTIONS_LOGIC /* Logic */,
+				001A_ACTIONS_UI /* UI */,
+			);
+			path = Actions;
+			sourceTree = "<group>";
+		};
+		002B_SNAP /* Snap */ = {
+			isa = PBXGroup;
+			children = (
+				001B_SNAP_LOGIC /* Logic */,
+				001B_SNAP_UI /* UI */,
+			);
+			path = Snap;
+			sourceTree = "<group>";
+		};
+		002C_SWITCHER /* Switcher */ = {
+			isa = PBXGroup;
+			children = (
+				001C_SWITCHER_LOGIC /* Logic */,
+				001C_SWITCHER_UI /* UI */,
+			);
+			path = Switcher;
+			sourceTree = "<group>";
+		};
+		002D_SETTINGS /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				001D_SETTINGS_LOGIC /* Logic */,
+				001D_SETTINGS_UI /* UI */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		003F_FEATURES /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				002A_ACTIONS /* Actions */,
+				002B_SNAP /* Snap */,
+				002C_SWITCHER /* Switcher */,
+				002D_SETTINGS /* Settings */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		004D_DOMAIN /* Domain */ = {
+			isa = PBXGroup;
+			children = (
+				5E96D11FD382F413FD579CF4 /* ClipboardItem.swift */,
+				4B603F4CC94D8BEC4AEE8884 /* ContextState.swift */,
+				8FEBCBDF32329F1286274F39 /* NewFileType.swift */,
+				40AF7AA47510C033B18A3926 /* PinnedApp.swift */,
+			);
+			path = Domain;
+			sourceTree = "<group>";
+		};
+		005F_FOUNDATION /* Foundation */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Foundation;
+			sourceTree = "<group>";
+		};
 		2E8A84CB639D2F1F6A91154F /* Core */ = {
 			isa = PBXGroup;
 			children = (
 				D6BAAE527CE4A00D533CC697 /* MenuWindowManager.swift */,
+				2E3E6C2631D0341424011AB2 /* SuperMenuRootView.swift */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -84,7 +224,6 @@
 				CF9B2E2B664EADDBD4DDFEC3 /* EntitlementService.swift */,
 				F04281E472E2D50637D43183 /* FileOperationsService.swift */,
 				E86A369529F2A37A01A8E355 /* PermissionStateMachine.swift */,
-				B2643170ECB6083E6A3CD662 /* WindowSnapService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -94,9 +233,10 @@
 			children = (
 				482661BC2B5968FC58C82731 /* App */,
 				2E8A84CB639D2F1F6A91154F /* Core */,
-				C8E3222A9A296504E59F7576 /* Models */,
+				004D_DOMAIN /* Domain */,
+				003F_FEATURES /* Features */,
+				005F_FOUNDATION /* Foundation */,
 				5F92E0A5A9C7AD208F0D7045 /* Services */,
-				CA6DC79DCB01F34485DF88A1 /* UI */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -116,30 +256,6 @@
 				7FDE0F9900A542910510ED61 /* Sources */,
 				84CB6381BF741627F6264BAB /* Products */,
 			);
-			sourceTree = "<group>";
-		};
-		C8E3222A9A296504E59F7576 /* Models */ = {
-			isa = PBXGroup;
-			children = (
-				5E96D11FD382F413FD579CF4 /* ClipboardItem.swift */,
-				4B603F4CC94D8BEC4AEE8884 /* ContextState.swift */,
-				8FEBCBDF32329F1286274F39 /* NewFileType.swift */,
-				40AF7AA47510C033B18A3926 /* PinnedApp.swift */,
-			);
-			path = Models;
-			sourceTree = "<group>";
-		};
-		CA6DC79DCB01F34485DF88A1 /* UI */ = {
-			isa = PBXGroup;
-			children = (
-				965CF468D822DA8C302ECBA7 /* ActionsTab.swift */,
-				668CFA826DDC2B797A5B4BFE /* AppIconView.swift */,
-				6CC56BDA7F64852A1A23FD8A /* SnapTab.swift */,
-				C11D9E32881BD3618E4DCFB4 /* SettingsTab.swift */,
-				2E3E6C2631D0341424011AB2 /* SuperMenuRootView.swift */,
-				1A95A780B23FE1F92717808C /* SwitcherTab.swift */,
-			);
-			path = UI;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -221,6 +337,10 @@
 				772263DF196801DB4B2F412E /* SuperMenuRootView.swift in Sources */,
 				1C02DA35360539608F251755 /* SwitcherTab.swift in Sources */,
 				A43A40C5ABD9336D2F49B12D /* WindowSnapService.swift in Sources */,
+				F1E70001B23FE1F92717808C /* SnapManager.swift in Sources */,
+				F1E70002B23FE1F92717808C /* ActionManager.swift in Sources */,
+				F1E70003B23FE1F92717808C /* SwitcherManager.swift in Sources */,
+				F1E70004B23FE1F92717808C /* SettingsManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

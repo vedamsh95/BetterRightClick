@@ -10,13 +10,13 @@ struct SwitcherTab: View {
                     .font(.headline)
                 Spacer()
                 Button("Refresh") {
-                    windowManager.refreshApps()
+                    windowManager.switcher.refreshApps()
                 }
             }
 
             List(windowManager.runningApps, id: \.processIdentifier) { app in
                 Button {
-                    windowManager.focusApp(app)
+                    windowManager.switcher.focusApp(app)
                 } label: {
                     HStack(spacing: 10) {
                         AppIconView(app: app)

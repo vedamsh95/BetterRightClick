@@ -10,48 +10,54 @@ final class MenuWindowManager: ObservableObject {
         let ok = windowSnapService.undoLastSnap()
         statusMessage = ok ? "Restored previous window frame." : "Nothing to undo."
     }
-    @Published private(set) var clipboardItems: [ClipboardItem] = []
-    @Published private(set) var runningApps: [NSRunningApplication] = []
-    @Published private(set) var contextState: ContextState = ContextState()
-    @Published private(set) var pinnedApps: [PinnedApp] = []
-    @Published private(set) var statusMessage: String = ""
-    @Published private(set) var diagnosticsAXTrusted: Bool = false
-    @Published private(set) var diagnosticsAutomationOK: Bool = false
-    @Published private(set) var diagnosticsTargetBundleID: String = ""
-    @Published private(set) var diagnosticsContextFolder: String = ""
-    @Published private(set) var diagnosticsLastPastePath: String = "idle"
-    @Published private(set) var diagnosticsAppleEventsEntitled: Bool = false
-    @Published private(set) var diagnosticsSelectedTextDetected: Bool = false
+    @Published var clipboardItems: [ClipboardItem] = []
+    @Published var runningApps: [NSRunningApplication] = []
+    @Published var contextState: ContextState = ContextState()
+    @Published var pinnedApps: [PinnedApp] = []
+    @Published var statusMessage: String = ""
+    @Published var diagnosticsAXTrusted: Bool = false
+    @Published var diagnosticsAutomationOK: Bool = false
+    @Published var diagnosticsTargetBundleID: String = ""
+    @Published var diagnosticsContextFolder: String = ""
+    @Published var diagnosticsLastPastePath: String = "idle"
+    @Published var diagnosticsAppleEventsEntitled: Bool = false
+    @Published var diagnosticsSelectedTextDetected: Bool = false
     @Published var isPinned: Bool = false
-    @Published private(set) var diagnosticsSelectionSource: String = "none"
-    @Published private(set) var diagnosticsSelectionDetails: String = "idle"
-    @Published private(set) var diagnosticsOCRState: String = "idle"
-    @Published private(set) var diagnosticsOCRDestination: String = "none"
-    @Published private(set) var diagnosticsAppBundlePath: String = ""
-    @Published private(set) var diagnosticsSnapState: String = "idle"
-    @Published private(set) var permissionSnapshot: PermissionStateMachine.Snapshot = .empty
-    @Published private(set) var snapDisplays: [WindowSnapService.DisplayTarget] = []
-    @Published private(set) var lookupResult: String?
+    @Published var diagnosticsSelectionSource: String = "none"
+    @Published var diagnosticsSelectionDetails: String = "idle"
+    @Published var diagnosticsOCRState: String = "idle"
+    @Published var diagnosticsOCRDestination: String = "none"
+    @Published var diagnosticsAppBundlePath: String = ""
+    @Published var diagnosticsSnapState: String = "idle"
+    @Published var permissionSnapshot: PermissionStateMachine.Snapshot = .empty
+    @Published var snapDisplays: [WindowSnapService.DisplayTarget] = []
+    @Published var lookupResult: String?
+    
+    // Feature Managers
+    @Published var snap: SnapManager!
+    @Published var actions: ActionManager!
+    @Published var switcher: SwitcherManager!
+    @Published var settings: SettingsManager!
 
     private var panel: NSPanel?
     private var rightClickMonitor: Any?
     private var globalDismissMonitor: Any?
     private var localDismissMonitor: Any?
 
-    private let clipboardService: ClipboardService
-    private let appSwitcherService: AppSwitcherService
-    private let contextService: ContextService
-    private let fileOperationsService: FileOperationsService
-    private let accessibilityService = AccessibilityService()
-    private let permissionStateMachine = PermissionStateMachine()
-    private let windowSnapService = WindowSnapService()
-    private let entitlementService = EntitlementService()
+    internal let clipboardService: ClipboardService
+    internal let appSwitcherService: AppSwitcherService
+    internal let contextService: ContextService
+    internal let fileOperationsService: FileOperationsService
+    internal let accessibilityService = AccessibilityService()
+    internal let permissionStateMachine = PermissionStateMachine()
+    internal let windowSnapService = WindowSnapService()
+    internal let entitlementService = EntitlementService()
 
     private var cancellables: Set<AnyCancellable> = []
     private var hasPromptedForAccessibility = false
     private var hasStarted = false
-    private var lastFrontmostApp: NSRunningApplication?
-    private var lastRightClickLocation: NSPoint?
+    var lastFrontmostApp: NSRunningApplication?
+    var lastRightClickLocation: NSPoint?
     private var lastPanelShowTime: TimeInterval = 0
 
     private let panelSize = NSSize(width: 500, height: 430)
@@ -84,6 +90,18 @@ final class MenuWindowManager: ObservableObject {
             .receive(on: RunLoop.main)
             .sink { [weak self] in self?.runningApps = $0 }
             .store(in: &cancellables)
+            
+        // Initialize sub-managers
+        self.snap = SnapManager(windowManager: self, snapService: windowSnapService)
+        self.actions = ActionManager(windowManager: self, fileService: fileOperationsService)
+        self.switcher = SwitcherManager(windowManager: self, appSwitcherService: appSwitcherService, clipboardService: clipboardService)
+        self.settings = SettingsManager(
+            windowManager: self,
+            accessibilityService: accessibilityService,
+            permissionStateMachine: permissionStateMachine,
+            entitlementService: entitlementService,
+            contextService: contextService
+        )
     }
 
     func start() {
@@ -98,8 +116,8 @@ final class MenuWindowManager: ObservableObject {
         clipboardService.captureCurrentSnapshot()
         appSwitcherService.refreshRunningApps()
         refreshContext()
-        refreshDiagnostics(probePermissions: false)
-        refreshSnapDisplays()
+        settings.refreshDiagnostics(probePermissions: false)
+        snap.refreshSnapDisplays()
 
         if !accessibilityService.isTrusted(promptIfNeeded: true) {
             accessibilityService.openSettings()
@@ -139,10 +157,6 @@ final class MenuWindowManager: ObservableObject {
         panel?.orderOut(nil)
     }
 
-    func refreshApps() {
-        appSwitcherService.refreshRunningApps()
-    }
-
     func refreshContext(useFinderScript: Bool = false, allowSelectionProbe: Bool = false) {
         let workspaceFrontmost = NSWorkspace.shared.frontmostApplication
         let preferredApp: NSRunningApplication?
@@ -159,918 +173,6 @@ final class MenuWindowManager: ObservableObject {
         )
 
         updatePinnedApps()
-        diagnosticsContextFolder = contextState.directoryURL?.path ?? "(not detected)"
-        diagnosticsSelectedTextDetected = !(contextState.selectedText?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
-        diagnosticsSelectionSource = contextState.selectedTextSource ?? "none"
-        diagnosticsSelectionDetails = contextService.lastSelectionDiagnostics
-    }
-
-    func refreshDiagnostics(probePermissions: Bool = false) {
-        permissionSnapshot = permissionStateMachine.refresh(
-            accessibilityService: accessibilityService,
-            entitlementService: entitlementService,
-            previous: permissionSnapshot,
-            probeAppleEvents: false // Sync part ignores probe to keep UI responsive
-        )
-
-        updateDiagnosticsProperties()
-
-        if probePermissions {
-            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-                guard let self = self else { return }
-                let appleEventsResult = self.permissionStateMachine.probeAppleEventsAutomation(promptIfNeeded: false)
-                DispatchQueue.main.async {
-                    self.permissionSnapshot.appleEventsGranted = appleEventsResult.granted
-                    self.permissionSnapshot.appleEventsLastError = appleEventsResult.errorSummary
-                    self.updateDiagnosticsProperties()
-                }
-            }
-        }
-    }
-
-    private func updateDiagnosticsProperties() {
-        diagnosticsAXTrusted = permissionSnapshot.accessibilityGranted
-        diagnosticsAutomationOK = permissionSnapshot.appleEventsGranted
-        diagnosticsAppleEventsEntitled = permissionSnapshot.appleEventsEntitled
-        diagnosticsTargetBundleID = contextState.frontmostBundleID
-            ?? lastFrontmostApp?.bundleIdentifier
-            ?? NSWorkspace.shared.frontmostApplication?.bundleIdentifier
-            ?? "(unknown)"
-        diagnosticsContextFolder = contextState.directoryURL?.path ?? "(not detected)"
-        diagnosticsAppBundlePath = Bundle.main.bundleURL.path
-    }
-
-    func requestAccessibilityAccess() {
-        permissionStateMachine.requestAccessibility(accessibilityService: accessibilityService)
-        refreshDiagnostics(probePermissions: true)
-        hasPromptedForAccessibility = true
-    }
-
-    func requestAppleEventsAccess() {
-        permissionStateMachine.requestAppleEvents()
-        refreshDiagnostics(probePermissions: true)
-    }
-
-    func requestScreenRecordingAccess() {
-        permissionStateMachine.requestScreenRecording()
-        refreshDiagnostics(probePermissions: true)
-    }
-
-    func openScreenRecordingSettings() {
-        permissionStateMachine.openScreenRecordingSettings()
-    }
-
-    func openAutomationSettings() {
-        permissionStateMachine.openAutomationSettings()
-    }
-
-    func refreshPermissionsAndContext() {
-        refreshContext(useFinderScript: false, allowSelectionProbe: false)
-        refreshDiagnostics(probePermissions: true)
-    }
-
-    func revealThisAppInFinder() {
-        NSWorkspace.shared.activateFileViewerSelecting([Bundle.main.bundleURL])
-    }
-
-    func copyAppBundlePath() {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(Bundle.main.bundleURL.path, forType: .string)
-        statusMessage = "Copied app bundle path."
-    }
-
-    func copyDiagnosticsSnapshot() {
-        let lines = [
-            "AX Trusted: \(diagnosticsAXTrusted ? "Yes" : "No")",
-            "Automation (System Events): \(diagnosticsAutomationOK ? "Yes" : "No")",
-            "Screen Recording: \(permissionSnapshot.screenRecordingGranted ? "Yes" : "No")",
-            "Target Bundle: \(diagnosticsTargetBundleID)",
-            "Selected Text Detected: \(diagnosticsSelectedTextDetected ? "Yes" : "No")",
-            "Selection Source: \(diagnosticsSelectionSource)",
-            "Selection Details: \(diagnosticsSelectionDetails)",
-            "OCR State: \(diagnosticsOCRState)",
-            "OCR Destination: \(diagnosticsOCRDestination)",
-            "Snap State: \(diagnosticsSnapState)",
-            "Apple Events Entitlement: \(diagnosticsAppleEventsEntitled ? "Yes" : "No")",
-            "Apple Events Last Error: \(permissionSnapshot.appleEventsLastError)",
-            "Context Folder: \(diagnosticsContextFolder)",
-            "Last Paste Path: \(diagnosticsLastPastePath)",
-            "App Path: \(diagnosticsAppBundlePath)"
-        ]
-
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(lines.joined(separator: "\n"), forType: .string)
-        statusMessage = "Copied diagnostics to clipboard."
-    }
-
-    func takeScreenshot() {
-        hidePanel()
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
-        let filename = "BRC_Screenshot_\(formatter.string(from: Date())).png"
-        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
-
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
-        process.arguments = ["-i", tempURL.path]
-
-        do {
-            try process.run()
-            process.waitUntilExit()
-
-            if process.terminationStatus == 0,
-               FileManager.default.fileExists(atPath: tempURL.path) {
-                NSApp.activate(ignoringOtherApps: true)
-
-                let panel = NSSavePanel()
-                panel.canCreateDirectories = true
-                panel.nameFieldStringValue = filename
-                panel.allowedContentTypes = [.png]
-                panel.isExtensionHidden = false
-                panel.title = "Save Screenshot"
-                panel.message = "Choose where to save your screenshot."
-
-                if panel.runModal() == .OK, let destination = panel.url {
-                    if FileManager.default.fileExists(atPath: destination.path) {
-                        try? FileManager.default.removeItem(at: destination)
-                    }
-
-                    do {
-                        try FileManager.default.moveItem(at: tempURL, to: destination)
-                        statusMessage = "Screenshot saved to \(destination.lastPathComponent)."
-                        diagnosticsLastPastePath = "screenshot: saved-via-save-panel"
-                    } catch {
-                        statusMessage = "Failed to save screenshot: \(error.localizedDescription)"
-                        diagnosticsLastPastePath = "screenshot: save-failed"
-                        try? FileManager.default.removeItem(at: tempURL)
-                    }
-                } else {
-                    statusMessage = "Screenshot captured, but save was cancelled."
-                    diagnosticsLastPastePath = "screenshot: save-cancelled"
-                    try? FileManager.default.removeItem(at: tempURL)
-                }
-            } else {
-                statusMessage = "Screenshot cancelled or blocked by Screen Recording permission."
-                diagnosticsLastPastePath = "screenshot: cancelled-or-blocked"
-                try? FileManager.default.removeItem(at: tempURL)
-            }
-        } catch {
-            statusMessage = "Failed to start screenshot tool: \(error.localizedDescription)"
-            diagnosticsLastPastePath = "screenshot: failed-to-start"
-            try? FileManager.default.removeItem(at: tempURL)
-        }
-    }
-
-    func minimizeAllActiveApps() {
-        hidePanel()
-
-        let apps = NSWorkspace.shared.runningApplications.filter {
-            $0.bundleIdentifier != Bundle.main.bundleIdentifier &&
-            $0.activationPolicy == .regular &&
-            !$0.isTerminated
-        }
-
-        var hiddenCount = 0
-        for app in apps {
-            if app.hide() {
-                hiddenCount += 1
-            }
-        }
-
-        statusMessage = hiddenCount > 0
-            ? "Minimized/hidden \(hiddenCount) active app(s)."
-            : "No active apps were minimized."
-    }
-
-    func focusApp(_ app: NSRunningApplication) {
-        _ = app.activate(options: [.activateAllWindows])
-        hidePanel()
-    }
-
-    func refreshSnapDisplays() {
-        snapDisplays = windowSnapService.availableDisplays()
-    }
-
-    func snapWindowToGrid(columns: Int, rows: Int, column: Int, rowFromTop: Int, preferredDisplayID: CGDirectDisplayID?) {
-        refreshDiagnostics(probePermissions: false)
-        let probePoint = lastRightClickLocation ?? NSEvent.mouseLocation
-        let preferredPID = lastFrontmostApp?.processIdentifier
-        do {
-            let display = try windowSnapService.snapWindowUnderCursor(
-                columns: columns,
-                rows: rows,
-                column: column,
-                rowFromTop: rowFromTop,
-                preferredDisplayID: preferredDisplayID,
-                probeLocation: probePoint,
-                preferredAppPID: preferredPID
-            )
-            statusMessage = "Snapped window on \(display.name) (\(columns)x\(rows))."
-            diagnosticsSnapState = "success: display=\(display.name), grid=\(columns)x\(rows), cell=(\(rowFromTop),\(column)), probe=(\(Int(probePoint.x)),\(Int(probePoint.y)))"
-            refreshSnapDisplays()
-        } catch {
-            statusMessage = error.localizedDescription
-            let ax = diagnosticsAXTrusted ? "granted" : "not granted"
-            if let snapError = error as? WindowSnapService.SnapError {
-                diagnosticsSnapState = "failed: \(snapError.localizedDescription) | AX=\(ax) | displays=\(snapDisplays.count) | probe=(\(Int(probePoint.x)),\(Int(probePoint.y)))"
-            } else {
-                diagnosticsSnapState = "failed: \(error.localizedDescription) | AX=\(ax)"
-            }
-        }
-    }
-
-    func snapWindowCustomSpan(columns: Int, rows: Int, startColumn: Int, columnCount: Int, preferredDisplayID: CGDirectDisplayID?) {
-        refreshDiagnostics(probePermissions: false)
-        let probePoint = lastRightClickLocation ?? NSEvent.mouseLocation
-        let preferredPID = lastFrontmostApp?.processIdentifier
-        do {
-            let display = try windowSnapService.snapWindowCustomSpanUnderCursor(
-                columns: columns,
-                rows: rows,
-                startColumn: startColumn,
-                columnCount: columnCount,
-                preferredDisplayID: preferredDisplayID,
-                probeLocation: probePoint,
-                preferredAppPID: preferredPID
-            )
-            statusMessage = "Snapped custom span on \(display.name)."
-            diagnosticsSnapState = "success: display=\(display.name), customSpan=\(startColumn)->\(startColumn+columnCount)"
-            refreshSnapDisplays()
-        } catch {
-            statusMessage = error.localizedDescription
-            let ax = diagnosticsAXTrusted ? "granted" : "not granted"
-            if let snapError = error as? WindowSnapService.SnapError {
-                diagnosticsSnapState = "failed: \(snapError.localizedDescription) | AX=\(ax)"
-            } else {
-                diagnosticsSnapState = "failed: \(error.localizedDescription) | AX=\(ax)"
-            }
-        }
-    }
-
-    func snapSidekick(direction: WindowSnapService.SidekickDirection, preferredDisplayID: CGDirectDisplayID?) {
-        refreshDiagnostics(probePermissions: false)
-        let probePoint = lastRightClickLocation ?? NSEvent.mouseLocation
-        let preferredPID = lastFrontmostApp?.processIdentifier
-        do {
-            let display = try windowSnapService.snapSidekick(
-                direction: direction,
-                preferredDisplayID: preferredDisplayID,
-                probeLocation: probePoint,
-                preferredAppPID: preferredPID
-            )
-            statusMessage = "Deployed Sidekick on \(display.name)."
-            diagnosticsSnapState = "success: sidekick=\(direction)"
-            refreshSnapDisplays()
-        } catch {
-            statusMessage = error.localizedDescription
-            let ax = diagnosticsAXTrusted ? "granted" : "not granted"
-            if let snapError = error as? WindowSnapService.SnapError {
-                diagnosticsSnapState = "failed: \(snapError.localizedDescription) | AX=\(ax)"
-            } else {
-                diagnosticsSnapState = "failed: \(error.localizedDescription) | AX=\(ax)"
-            }
-        }
-    }
-
-    func snapMultipleApps(_ apps: [NSRunningApplication], preferredDisplayID: CGDirectDisplayID?, layoutMode: WindowSnapService.MultiSnapLayout = .columns) {
-        refreshDiagnostics(probePermissions: false)
-        let probePoint = lastRightClickLocation ?? NSEvent.mouseLocation
-        do {
-            let display = try windowSnapService.snapMultipleApps(
-                apps: apps,
-                preferredDisplayID: preferredDisplayID,
-                probeLocation: probePoint,
-                layoutMode: layoutMode
-            )
-            statusMessage = "Tiled \(apps.count) apps on \(display.name)."
-            diagnosticsSnapState = "success: multi-snap count=\(apps.count)"
-            refreshSnapDisplays()
-        } catch {
-            statusMessage = error.localizedDescription
-            let ax = diagnosticsAXTrusted ? "granted" : "not granted"
-            if let snapError = error as? WindowSnapService.SnapError {
-                diagnosticsSnapState = "failed: \(snapError.localizedDescription) | AX=\(ax)"
-            } else {
-                diagnosticsSnapState = "failed: \(error.localizedDescription) | AX=\(ax)"
-            }
-        }
-    }
-
-    func snapEvenGrid(apps: [NSRunningApplication], preferredDisplayID: CGDirectDisplayID?) {
-        let layout: WindowSnapService.MultiSnapLayout
-        switch apps.count {
-        case 4: layout = .grid2x2
-        default: layout = .columns
-        }
-        snapMultipleApps(apps, preferredDisplayID: preferredDisplayID, layoutMode: layout)
-    }
-
-    func snapMainPlusStack(apps: [NSRunningApplication], preferredDisplayID: CGDirectDisplayID?) {
-        snapMultipleApps(apps, preferredDisplayID: preferredDisplayID, layoutMode: .mainPlusStack)
-    }
-
-    func distributeToScreens(apps: [NSRunningApplication]) {
-        refreshDiagnostics(probePermissions: false)
-        let screens = NSScreen.screens
-        guard !screens.isEmpty else {
-            statusMessage = "No screens detected."
-            return
-        }
-
-        let displays = windowSnapService.availableDisplays()
-        guard !displays.isEmpty else {
-            statusMessage = "No displays available."
-            return
-        }
-
-        // Divide apps evenly across screens
-        let screensToUse = min(displays.count, apps.count)
-        let appsPerScreen = apps.count / screensToUse
-        let remainder = apps.count % screensToUse
-
-        var appIndex = 0
-        for screenIndex in 0..<screensToUse {
-            let count = appsPerScreen + (screenIndex < remainder ? 1 : 0)
-            let subset = Array(apps[appIndex..<appIndex + count])
-            appIndex += count
-
-            let displayID = displays[screenIndex].id
-            snapMultipleApps(subset, preferredDisplayID: displayID)
-        }
-    }
-
-    func swapApps(appA: NSRunningApplication, appB: NSRunningApplication) {
-        refreshDiagnostics(probePermissions: false)
-        do {
-            try windowSnapService.swapApps(pidA: appA.processIdentifier, pidB: appB.processIdentifier)
-            statusMessage = "Swapped \(appA.localizedName ?? "App 1") and \(appB.localizedName ?? "App 2")."
-            diagnosticsSnapState = "success: swap-apps"
-        } catch {
-            statusMessage = error.localizedDescription
-            let ax = diagnosticsAXTrusted ? "granted" : "not granted"
-            if let snapError = error as? WindowSnapService.SnapError {
-                diagnosticsSnapState = "failed: \(snapError.localizedDescription) | AX=\(ax)"
-            } else {
-                diagnosticsSnapState = "failed: \(error.localizedDescription) | AX=\(ax)"
-            }
-        }
-    }
-
-    func swapTopTwoWindows() {
-        refreshDiagnostics(probePermissions: false)
-        // Identify the two frontmost regular apps by Z-order
-        let regularApps = NSWorkspace.shared.runningApplications.filter {
-            $0.activationPolicy == .regular
-            && $0.processIdentifier != ProcessInfo.processInfo.processIdentifier
-        }
-        guard regularApps.count >= 2 else {
-            statusMessage = "Need at least 2 windows to swap."
-            return
-        }
-        do {
-            try windowSnapService.swapApps(pidA: regularApps[0].processIdentifier, pidB: regularApps[1].processIdentifier)
-            statusMessage = "Swapped the two frontmost windows."
-            diagnosticsSnapState = "success: global-swap"
-        } catch {
-            statusMessage = error.localizedDescription
-            diagnosticsSnapState = "failed: \(error.localizedDescription)"
-        }
-    }
-
-    enum PathCopyStyle {
-        case posix
-        case terminalEscaped
-        case fileURL
-    }
-
-    func copyPathAs(_ style: PathCopyStyle) {
-        let raw = contextState.targetURL?.path
-            ?? contextState.selectedFileURLs.first?.path
-            ?? contextState.directoryURL?.path
-
-        guard let path = raw else {
-            statusMessage = "No file or folder selected."
-            return
-        }
-
-        let formatted: String
-        switch style {
-        case .posix:
-            formatted = path
-        case .terminalEscaped:
-            formatted = path.replacingOccurrences(of: " ", with: "\\ ")
-                           .replacingOccurrences(of: "(", with: "\\(")
-                           .replacingOccurrences(of: ")", with: "\\)")
-                           .replacingOccurrences(of: "[", with: "\\[")
-                           .replacingOccurrences(of: "]", with: "\\]")
-                           .replacingOccurrences(of: "&", with: "\\&")
-                           .replacingOccurrences(of: ";", with: ";")
-        case .fileURL:
-            formatted = URL(fileURLWithPath: path).absoluteString
-        }
-
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(formatted, forType: .string)
-        statusMessage = "Copied path to clipboard."
-    }
-
-    func copyClipboardItemToPasteboard(_ item: ClipboardItem) {
-        let ok = clipboardService.copyToPasteboard(item)
-        statusMessage = ok ? "Copied item to clipboard." : "Failed to copy item to clipboard."
-    }
-
-    func pasteClipboardItem(_ item: ClipboardItem) {
-        guard clipboardService.copyToPasteboard(item) else {
-            statusMessage = "Failed to prepare clipboard item for paste."
-            return
-        }
-
-        // Instantly trigger Cmd+V after loading the item into native clipboard
-        postPasteCommandToFrontmostApp(preferMatchStyle: false)
-    }
-
-    enum TextStyle {
-        case plainText, uppercase, lowercase, titleCase
-    }
-
-    var canUseTextTools: Bool {
-        true
-    }
-
-    var canUseOCRTools: Bool {
-        if contextState.targetKind == .image {
-            return true
-        }
-
-        if let first = contextState.selectedFileURLs.first {
-            let ext = first.pathExtension.lowercased()
-            let imageExts: Set<String> = ["png", "jpg", "jpeg", "gif", "heic", "webp", "tiff", "bmp", "svg"]
-            return imageExts.contains(ext)
-        }
-
-        return false
-    }
-
-    func lookupText(_ text: String) {
-        if let result = DCSCopyTextDefinition(nil, text as CFString, CFRangeMake(0, text.count))?.takeRetainedValue() as String? {
-            lookupResult = result
-        } else {
-            lookupResult = "No definition found for '\(text)'"
-        }
-    }
-
-    func clearLookup() {
-        lookupResult = nil
-    }
-
-    func lookupCurrentTextContext() {
-        guard let text = resolveSelectedTextForTools() else {
-            statusMessage = "No selected text detected for lookup."
-            return
-        }
-        lookupText(text)
-    }
-
-    func formatCurrentTextContext(style: TextStyle) {
-        guard let text = resolveSelectedTextForTools() else {
-            statusMessage = "No selected text detected for formatting."
-            return
-        }
-
-        let formattedText: String
-        switch style {
-        case .plainText: formattedText = text
-        case .uppercase: formattedText = text.uppercased()
-        case .lowercase: formattedText = text.lowercased()
-        case .titleCase: formattedText = text.capitalized
-        }
-
-        if contextService.replaceSelectedTextInFocusedElement(with: formattedText) {
-            statusMessage = "Formatted selected text replaced via Accessibility."
-            diagnosticsLastPastePath = "ax-set-selected-text"
-            return
-        }
-
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(formattedText, forType: .string)
-        statusMessage = "Formatted selected text pasted (fallback)."
-        postPasteCommandToFrontmostApp(preferMatchStyle: false)
-    }
-
-    private func resolveSelectedTextForTools() -> String? {
-        if let current = contextState.selectedText?.trimmingCharacters(in: .whitespacesAndNewlines), !current.isEmpty {
-            diagnosticsSelectedTextDetected = true
-            diagnosticsSelectionDetails = "using cached selection (len=\(current.count))"
-            return current
-        }
-
-        // Re-capture right now in case panel-open timing missed it.
-        refreshContext(useFinderScript: false, allowSelectionProbe: false)
-        if let refreshed = contextState.selectedText?.trimmingCharacters(in: .whitespacesAndNewlines), !refreshed.isEmpty {
-            diagnosticsSelectedTextDetected = true
-            diagnosticsSelectionDetails = "selection refreshed from AX (len=\(refreshed.count))"
-            return refreshed
-        }
-
-        // Explicit user action fallback only: probe selection via Cmd+C snapshot/restore.
-        if let probed = probeSelectedTextFromActiveApp()?.trimmingCharacters(in: .whitespacesAndNewlines), !probed.isEmpty {
-            contextState.selectedText = probed
-            contextState.selectedTextSource = "cmd-c-probe-action"
-            diagnosticsSelectedTextDetected = true
-            diagnosticsSelectionSource = contextState.selectedTextSource ?? "none"
-            diagnosticsSelectionDetails = "selected-text found via on-demand cmd-c probe"
-            return probed
-        }
-
-        diagnosticsSelectedTextDetected = false
-        diagnosticsSelectionDetails = "no selected text detected (AX + on-demand probe)"
-
-        return nil
-    }
-
-    func formatSelectedText(style: TextStyle) {
-        guard let text = contextState.selectedText else { return }
-        let formattedText: String
-        switch style {
-        case .plainText: formattedText = text
-        case .uppercase: formattedText = text.uppercased()
-        case .lowercase: formattedText = text.lowercased()
-        case .titleCase: formattedText = text.capitalized
-        }
-        
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(formattedText, forType: .string)
-        statusMessage = "Formatted text pasted."
-        postPasteCommandToFrontmostApp(preferMatchStyle: false)
-    }
-
-    func createNewFile(_ type: NewFileType) {
-        refreshContext(useFinderScript: false)
-
-        let destinationDirectory = resolvedActionDirectory(preferFinderContext: true)
-        let saveURL: URL?
-
-        if let dir = destinationDirectory,
-           fileOperationsService.isWritableDirectory(dir) {
-            saveURL = nextUntitledURL(in: dir, type: type)
-        } else {
-            saveURL = presentSavePanelForNewFile(type: type)
-        }
-
-        guard let targetURL = saveURL else {
-            statusMessage = "Create file cancelled."
-            return
-        }
-
-        do {
-            try fileOperationsService.createFile(type: type, at: targetURL)
-            statusMessage = "Created \(targetURL.lastPathComponent)"
-            NSWorkspace.shared.activateFileViewerSelecting([targetURL])
-        } catch {
-            statusMessage = "Create file failed: \(error.localizedDescription)"
-        }
-    }
-
-    func createNewFile(_ template: FileTemplate) {
-        refreshContext(useFinderScript: false)
-
-        let destinationDirectory = resolvedActionDirectory(preferFinderContext: true)
-        let saveURL: URL?
-
-        if let dir = destinationDirectory,
-           fileOperationsService.isWritableDirectory(dir) {
-            saveURL = nextUntitledURL(in: dir, template: template)
-        } else {
-            saveURL = presentSavePanelForNewFile(template: template)
-        }
-
-        guard let targetURL = saveURL else {
-            statusMessage = "Create file cancelled."
-            return
-        }
-
-        do {
-            try fileOperationsService.createFile(template: template, at: targetURL)
-            statusMessage = "Created \(targetURL.lastPathComponent)"
-            NSWorkspace.shared.activateFileViewerSelecting([targetURL])
-        } catch {
-            statusMessage = "Create file failed: \(error.localizedDescription)"
-        }
-    }
-
-    func deleteTargetPermanently() {
-        guard let url = contextState.targetURL else { return }
-        do {
-            try FileManager.default.removeItem(at: url)
-            hidePanel()
-            statusMessage = "Deleted permanently."
-        } catch {
-            statusMessage = "Delete failed: \(error.localizedDescription)"
-        }
-    }
-
-    func ocrImage() {
-        let sourceURL = resolveImageSourceForOCR()
-        diagnosticsOCRState = "resolve-source: \(sourceURL?.path ?? "nil")"
-        diagnosticsOCRDestination = "none"
-        guard let url = sourceURL, let image = NSImage(contentsOf: url) else {
-            statusMessage = "Failed to load image for OCR."
-            diagnosticsOCRState = "failed: NSImage load"
-            return
-        }
-        var rect = CGRect(origin: .zero, size: image.size)
-        guard let cgImage = image.cgImage(forProposedRect: &rect, context: nil, hints: nil) else {
-            statusMessage = "Failed to load image for OCR."
-            diagnosticsOCRState = "failed: cgImage conversion"
-            return
-        }
-
-        let requestHandler = VNImageRequestHandler(cgImage: cgImage, options: [:])
-        let request = VNRecognizeTextRequest { [weak self] request, error in
-            guard let observations = request.results as? [VNRecognizedTextObservation], error == nil else {
-                DispatchQueue.main.async {
-                    self?.statusMessage = "OCR failed: \(error?.localizedDescription ?? "Unknown")"
-                    self?.diagnosticsOCRState = "failed: VNRecognizeTextRequest callback error"
-                }
-                return
-            }
-            let recognizedText = observations.compactMap { $0.topCandidates(1).first?.string }.joined(separator: "\n")
-            DispatchQueue.main.async {
-                if !recognizedText.isEmpty {
-                    NSPasteboard.general.clearContents()
-                    NSPasteboard.general.setString(recognizedText, forType: .string)
-                    self?.statusMessage = "OCR text copied to clipboard and paste triggered in active app."
-                    self?.diagnosticsOCRState = "success: observations=\(observations.count), textLen=\(recognizedText.count)"
-                    self?.diagnosticsOCRDestination = "clipboard (+ paste attempt)"
-                    self?.postPasteCommandToFrontmostApp(preferMatchStyle: false)
-                } else {
-                    self?.statusMessage = "No text found in image."
-                    self?.diagnosticsOCRState = "success: observations=\(observations.count), empty text"
-                    self?.diagnosticsOCRDestination = "none"
-                }
-            }
-        }
-        
-        do {
-            try requestHandler.perform([request])
-        } catch {
-            statusMessage = "OCR request failed: \(error.localizedDescription)"
-            diagnosticsOCRState = "failed: requestHandler.perform"
-        }
-    }
-
-    private func resolveImageSourceForOCR() -> URL? {
-        if let target = contextState.targetURL, isImageURL(target) {
-            return target
-        }
-
-        if let selected = contextState.selectedFileURLs.first(where: { isImageURL($0) }) {
-            return selected
-        }
-
-        // Fallback so OCR remains usable even when Finder/Desktop context detection misses.
-        hidePanel()
-        NSApp.activate(ignoringOtherApps: true)
-
-        let panel = NSOpenPanel()
-        panel.canChooseDirectories = false
-        panel.canChooseFiles = true
-        panel.allowsMultipleSelection = false
-        panel.allowedContentTypes = []
-        panel.title = "Choose Image For OCR"
-
-        guard panel.runModal() == .OK, let picked = panel.url else {
-            diagnosticsOCRState = "cancelled: file-picker"
-            return nil
-        }
-
-        return picked
-    }
-
-    private func isImageURL(_ url: URL) -> Bool {
-        let imageExts: Set<String> = ["png", "jpg", "jpeg", "gif", "heic", "webp", "tiff", "bmp", "svg"]
-        return imageExts.contains(url.pathExtension.lowercased())
-    }
-
-    func stageCutFromCurrentContext() {
-        refreshContext(useFinderScript: false)
-
-        if !contextState.selectedFileURLs.isEmpty {
-            fileOperationsService.stageCutItems(contextState.selectedFileURLs)
-            statusMessage = "Staged \(fileOperationsService.cutItemCount) item(s) for cut."
-            return
-        }
-
-        if let target = contextState.targetURL, contextState.targetKind != .folder {
-            fileOperationsService.stageCutItems([target])
-            statusMessage = "Staged 1 item for cut (target under cursor)."
-            return
-        }
-
-        statusMessage = "No file selected to cut."
-    }
-
-    func pasteCutIntoCurrentDirectory() {
-        refreshContext(useFinderScript: false)
-        let directory = resolvedActionDirectory(preferFinderContext: true) ??
-            presentDirectoryPicker(title: "Choose Destination Folder")
-
-        guard let directory else {
-            statusMessage = "Paste cut cancelled."
-            return
-        }
-
-        do {
-            let moved = try fileOperationsService.pasteCutItems(into: directory)
-            statusMessage = moved > 0
-                ? "Moved \(moved) item(s) into \(directory.lastPathComponent)."
-                : "Nothing moved."
-            NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: directory.path)
-        } catch {
-            statusMessage = "Paste cut failed: \(error.localizedDescription)"
-        }
-    }
-
-    func flattenCurrentDirectory() {
-        refreshContext(useFinderScript: false)
-        let directory = resolvedActionDirectory(preferFinderContext: true) ??
-            presentDirectoryPicker(title: "Choose Folder To Flatten")
-
-        guard let directory else {
-            statusMessage = "Flatten cancelled."
-            return
-        }
-
-        do {
-            let moved = try fileOperationsService.flattenDirectory(root: directory)
-            statusMessage = "Flatten complete: moved \(moved) file(s)."
-            NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: directory.path)
-        } catch {
-            statusMessage = "Flatten failed: \(error.localizedDescription)"
-        }
-    }
-
-    func activatePinnedApp(_ pinned: PinnedApp) {
-        if let running = NSWorkspace.shared.runningApplications.first(where: { $0.bundleIdentifier == pinned.id }) {
-            _ = running.activate(options: [.activateAllWindows])
-            hidePanel()
-            return
-        }
-
-        if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: pinned.id) {
-            NSWorkspace.shared.openApplication(at: appURL, configuration: NSWorkspace.OpenConfiguration(), completionHandler: nil)
-            hidePanel()
-            return
-        }
-
-        statusMessage = "App not installed: \(pinned.name)"
-    }
-
-    func openTargetInFinder() {
-        if let target = contextState.targetURL {
-            NSWorkspace.shared.activateFileViewerSelecting([target])
-            statusMessage = "Revealed target in Finder."
-            return
-        }
-
-        if let directory = contextState.directoryURL {
-            NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: directory.path)
-            statusMessage = "Opened folder in Finder."
-            return
-        }
-
-        statusMessage = "No target item under cursor."
-    }
-
-    func openTargetWithDefaultApp() {
-        guard let target = contextState.targetURL else {
-            statusMessage = "No target item under cursor."
-            return
-        }
-
-        NSWorkspace.shared.open(target)
-        statusMessage = "Opened target with default app."
-        hidePanel()
-    }
-
-    var cutItemCount: Int {
-        fileOperationsService.cutItemCount
-    }
-
-    private func resolvedActionDirectory(preferFinderContext: Bool) -> URL? {
-        if preferFinderContext,
-           contextState.frontmostBundleID == "com.apple.finder",
-           let dir = contextState.directoryURL {
-            return dir
-        }
-
-        if let dir = contextState.directoryURL {
-            return dir
-        }
-
-        if let target = contextState.targetURL {
-            return contextState.targetKind == .folder ? target : target.deletingLastPathComponent()
-        }
-
-        return nil
-    }
-
-    private func nextUntitledURL(in directory: URL, type: NewFileType) -> URL {
-        let fm = FileManager.default
-        var index = 0
-
-        while true {
-            let name = index == 0 ? "Untitled" : "Untitled \(index)"
-            let candidate = directory.appendingPathComponent(name).appendingPathExtension(type.rawValue)
-            if !fm.fileExists(atPath: candidate.path) {
-                return candidate
-            }
-            index += 1
-        }
-    }
-
-    private func nextUntitledURL(in directory: URL, template: FileTemplate) -> URL {
-        let fm = FileManager.default
-        var index = 0
-
-        while true {
-            let name = index == 0 ? template.defaultName : "\(template.defaultName) \(index)"
-            let candidate = directory.appendingPathComponent(name).appendingPathExtension(template.extensionString)
-            if !fm.fileExists(atPath: candidate.path) {
-                return candidate
-            }
-            index += 1
-        }
-    }
-
-    private func presentSavePanelForNewFile(type: NewFileType) -> URL? {
-        hidePanel()
-        NSApp.activate(ignoringOtherApps: true)
-
-        let panel = NSSavePanel()
-        panel.canCreateDirectories = true
-        panel.allowedContentTypes = []
-        panel.nameFieldStringValue = "Untitled.\(type.rawValue)"
-        panel.title = "Create New \(type.label) File"
-
-        let response = panel.runModal()
-        guard response == .OK, let selected = panel.url else { return nil }
-
-        if selected.pathExtension.lowercased() == type.rawValue {
-            return selected
-        }
-
-        return selected.appendingPathExtension(type.rawValue)
-    }
-
-    private func presentSavePanelForNewFile(template: FileTemplate) -> URL? {
-        hidePanel()
-        NSApp.activate(ignoringOtherApps: true)
-
-        let panel = NSSavePanel()
-        panel.canCreateDirectories = true
-        panel.allowedContentTypes = []
-        panel.nameFieldStringValue = "\(template.defaultName).\(template.extensionString)"
-        panel.title = "Create New \(template.title)"
-
-        let response = panel.runModal()
-        guard response == .OK, let selected = panel.url else { return nil }
-
-        if selected.pathExtension.lowercased() == template.extensionString {
-            return selected
-        }
-
-        return selected.appendingPathExtension(template.extensionString)
-    }
-
-    private func presentDirectoryPicker(title: String) -> URL? {
-        hidePanel()
-        NSApp.activate(ignoringOtherApps: true)
-
-        let panel = NSOpenPanel()
-        panel.canChooseFiles = false
-        panel.canChooseDirectories = true
-        panel.allowsMultipleSelection = false
-        panel.canCreateDirectories = true
-        panel.title = title
-
-        let response = panel.runModal()
-        guard response == .OK else { return nil }
-        return panel.url
-    }
-
-    private func ensureAccessibilityForInputEvents() -> Bool {
-        if accessibilityService.isTrusted(promptIfNeeded: false) {
-            return true
-        }
-
-        if !hasPromptedForAccessibility {
-            _ = accessibilityService.isTrusted(promptIfNeeded: true)
-            accessibilityService.openSettings()
-            hasPromptedForAccessibility = true
-        }
-
-        return false
     }
 
     private func ensurePanel() {
@@ -1132,8 +234,8 @@ final class MenuWindowManager: ObservableObject {
         appSwitcherService.refreshRunningApps()
         // Keep panel-open capture AppleScript-free for stability in Finder/Desktop.
         refreshContext(useFinderScript: false, allowSelectionProbe: false)
-        refreshDiagnostics(probePermissions: false)
-        refreshSnapDisplays()
+        settings.refreshDiagnostics(probePermissions: false)
+        snap.refreshSnapDisplays()
 
         guard let panel else { return }
         if let screen = NSScreen.screens.first(where: { NSMouseInRect(mouse, $0.frame, false) }) {
@@ -1175,7 +277,7 @@ final class MenuWindowManager: ObservableObject {
         showPanelAtCurrentMouseLocation()
     }
 
-    private func postPasteCommandToFrontmostApp(preferMatchStyle: Bool) {
+    internal func postPasteCommandToFrontmostApp(preferMatchStyle: Bool) {
         hidePanel()
         
         // CRITICAL STEP: Completely hide our application explicitly so the previous application perfectly regains key focus.
@@ -1271,7 +373,7 @@ final class MenuWindowManager: ObservableObject {
         }
     }
 
-    private func postCommandVKeystroke(tap: CGEventTapLocation) {
+    internal func postCommandVKeystroke(tap: CGEventTapLocation) {
         let sourceState = CGEventSource(stateID: .hidSystemState)
         let cmdDown = CGEvent(keyboardEventSource: sourceState, virtualKey: 0x37, keyDown: true)
         let vDown = CGEvent(keyboardEventSource: sourceState, virtualKey: 0x09, keyDown: true)
@@ -1287,7 +389,7 @@ final class MenuWindowManager: ObservableObject {
         cmdUp?.post(tap: tap)
     }
 
-    private func postCommandCKeystroke(tap: CGEventTapLocation) {
+    internal func postCommandCKeystroke(tap: CGEventTapLocation) {
         let sourceState = CGEventSource(stateID: .hidSystemState)
         let cmdDown = CGEvent(keyboardEventSource: sourceState, virtualKey: 0x37, keyDown: true)
         let cDown = CGEvent(keyboardEventSource: sourceState, virtualKey: 0x08, keyDown: true)
@@ -1303,7 +405,7 @@ final class MenuWindowManager: ObservableObject {
         cmdUp?.post(tap: tap)
     }
 
-    private func probeSelectedTextFromActiveApp() -> String? {
+    internal func probeSelectedTextFromActiveApp() -> String? {
         guard ensureAccessibilityForInputEvents() else { return nil }
 
         let snapshot = clipboardService.snapshotGeneralPasteboard()
@@ -1345,6 +447,22 @@ final class MenuWindowManager: ObservableObject {
         optionUp?.post(tap: tap)
         shiftUp?.post(tap: tap)
         cmdUp?.post(tap: tap)
+    }
+
+    private func ensureAccessibilityForInputEvents() -> Bool {
+        if accessibilityService.isTrusted(promptIfNeeded: false) {
+            return true
+        }
+        
+        // If we've already prompted recently, don't nag.
+        if hasPromptedForAccessibility {
+            return false
+        }
+        
+        hasPromptedForAccessibility = true
+        accessibilityService.openSettings()
+        statusMessage = "Accessibility access required for input simulation."
+        return false
     }
 
 }
